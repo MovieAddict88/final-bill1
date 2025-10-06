@@ -9,7 +9,7 @@
 ?>
 	<div class="dashboard">
 		<div class="col-md-12 col-sm-12">
-		<div class="col-md-6"><h4><a href="bills.php" class="btn btn-sm btn-primary">  Back</a> Generated bills for Month of October</h4></div>
+		<div class="col-md-6"><h4><a href="bills.php" class="btn btn-sm btn-primary">  Back</a> Generated bills for Month of <?=date('F')?></h4></div>
 		<div class="col-md-6">
 			<form class="form-inline pull-right">
 			  <div class="form-group">

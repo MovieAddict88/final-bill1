@@ -29,11 +29,16 @@
 
 				$errors = array();
 				// Check if password are the same
-				if (!$admins->addCustomer($full_name, $nid, $address, $conn_location, $email, $package, $ip_address, $conn_type, $contact, $login_code, $employer_id))
+				$customer_id = $admins->addCustomer($full_name, $nid, $address, $conn_location, $email, $package, $ip_address, $conn_type, $contact, $login_code, $employer_id);
+				if ($customer_id)
 				{
-					session::set('errors', ['Couldn\'t Add New Customer']);
-				}else{
+					$packageInfo = $admins->getPackageInfo($package);
+					$amount = $packageInfo->fee;
+					$r_month = date('F');
+					$admins->billGenerate($customer_id, $r_month, $amount);
 					session::set('confirm', 'New customer added successfully!');
+				}else{
+					session::set('errors', ['Couldn\'t Add New Customer']);
 				}
 			}
 	}else if($page == 'del'){
