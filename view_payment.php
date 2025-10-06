@@ -63,6 +63,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <p><strong>GCash Number:</strong> <?php echo $payment->gcash_number; ?></p>
                     <?php endif; ?>
                     <p><strong>Reference Number:</strong> <?php echo $payment->reference_number; ?></p>
+                    <?php if ($payment->screenshot && file_exists($payment->screenshot)): ?>
+                        <p><strong>Screenshot:</strong></p>
+                        <img src="<?php echo $payment->screenshot; ?>" alt="Transaction Screenshot" class="img-fluid">
+                    <?php endif; ?>
                     <hr>
                     <form action="" method="POST">
                         <button type="submit" name="approve" class="btn btn-success">Approve</button>

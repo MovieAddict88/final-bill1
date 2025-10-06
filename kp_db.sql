@@ -190,7 +190,8 @@ CREATE TABLE `payments` (
   `payment_method` varchar(50) DEFAULT NULL,
   `reference_number` varchar(255) DEFAULT NULL,
   `gcash_name` varchar(255) DEFAULT NULL,
-  `gcash_number` varchar(255) DEFAULT NULL
+  `gcash_number` varchar(255) DEFAULT NULL,
+  `screenshot` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------

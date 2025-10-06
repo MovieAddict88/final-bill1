@@ -588,21 +588,44 @@
 			return false;
 		}
 
-		public function processPayment($payment_id, $payment_method, $reference_number, $gcash_name = null, $gcash_number = null)
+		public function processPayment($payment_id, $payment_method, $reference_number, $gcash_name = null, $gcash_number = null, $screenshot = null)
 		{
-			$request = $this->dbh->prepare("UPDATE payments SET status = 'Pending', payment_method = ?, reference_number = ?, gcash_name = ?, gcash_number = ? WHERE id = ?");
-			return $request->execute([$payment_method, $reference_number, $gcash_name, $gcash_number, $payment_id]);
+			$screenshot_path = null;
+			if ($screenshot && $screenshot['error'] == UPLOAD_ERR_OK) {
+				$upload_dir = 'uploads/screenshots/';
+				if (!is_dir($upload_dir)) {
+					mkdir($upload_dir, 0755, true);
+				}
+				$filename = uniqid() . '-' . preg_replace('/[^A-Za-z0-9.\-\_]/', '', basename($screenshot['name']));
+				$screenshot_path = $upload_dir . $filename;
+				move_uploaded_file($screenshot['tmp_name'], $screenshot_path);
+			}
+
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Pending', payment_method = ?, reference_number = ?, gcash_name = ?, gcash_number = ?, screenshot = ? WHERE id = ?");
+			return $request->execute([$payment_method, $reference_number, $gcash_name, $gcash_number, $screenshot_path, $payment_id]);
 		}
 
 		public function approvePayment($payment_id)
 		{
-			$request = $this->dbh->prepare("UPDATE payments SET status = 'Paid', p_date = NOW() WHERE id = ?");
+			$payment = $this->getPaymentById($payment_id);
+			if ($payment && $payment->screenshot) {
+				if (file_exists($payment->screenshot)) {
+					unlink($payment->screenshot);
+				}
+			}
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Paid', p_date = NOW(), screenshot = NULL WHERE id = ?");
 			return $request->execute([$payment_id]);
 		}
 
 		public function rejectPayment($payment_id)
 		{
-			$request = $this->dbh->prepare("UPDATE payments SET status = 'Unpaid', payment_method = NULL, reference_number = NULL WHERE id = ?");
+			$payment = $this->getPaymentById($payment_id);
+			if ($payment && $payment->screenshot) {
+				if (file_exists($payment->screenshot)) {
+					unlink($payment->screenshot);
+				}
+			}
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Unpaid', payment_method = NULL, reference_number = NULL, gcash_name = NULL, gcash_number = NULL, screenshot = NULL WHERE id = ?");
 			return $request->execute([$payment_id]);
 		}
 		
