@@ -105,6 +105,58 @@
 			return false;
 		}
 
+		public function getEmployerMonitoringData()
+		{
+			$current_month = date('Y-m');
+			$request = $this->dbh->prepare("
+				SELECT
+					u.user_id,
+					u.full_name,
+					u.location,
+					COUNT(c.id) AS total_customers,
+					SUM(CASE WHEN p.status = 'Paid' AND DATE_FORMAT(p.p_date, '%Y-%m') = :current_month THEN 1 ELSE 0 END) AS paid_customers,
+					SUM(CASE WHEN p.status != 'Paid' OR p.status IS NULL THEN 1 ELSE 0 END) AS unpaid_customers,
+					COALESCE(SUM(CASE WHEN p.status = 'Paid' AND DATE_FORMAT(p.p_date, '%Y-%m') = :current_month THEN p.amount ELSE 0 END), 0) AS monthly_paid_collection,
+					COALESCE(SUM(CASE WHEN p.status != 'Paid' AND DATE_FORMAT(p.g_date, '%Y-%m') = :current_month THEN p.balance ELSE 0 END), 0) AS monthly_unpaid_collection
+				FROM
+					kp_user u
+				LEFT JOIN
+					customers c ON u.user_id = c.employer_id
+				LEFT JOIN
+					payments p ON c.id = p.customer_id
+				WHERE
+					u.role = 'employer'
+				GROUP BY
+					u.user_id, u.full_name, u.location
+				ORDER BY
+					u.full_name
+			");
+
+			$request->execute(['current_month' => $current_month]);
+			$results = $request->fetchAll();
+
+			$data = [];
+			foreach ($results as $row) {
+				$employer_data = [
+					'info' => (object)[
+						'user_id' => $row->user_id,
+						'full_name' => $row->full_name,
+						'location' => $row->location,
+					],
+					'stats' => [
+						'total_customers' => (int)$row->total_customers,
+						'paid_customers' => (int)$row->paid_customers,
+						'unpaid_customers' => (int)$row->unpaid_customers,
+						'monthly_paid_collection' => (float)$row->monthly_paid_collection,
+						'monthly_unpaid_collection' => (float)$row->monthly_unpaid_collection,
+					],
+				];
+				$data[] = (object)$employer_data;
+			}
+
+			return $data;
+		}
+
 		public function getEmployerNameById($id)
 		{
 			$request = $this->dbh->prepare("SELECT full_name FROM kp_user WHERE user_id = ?");
