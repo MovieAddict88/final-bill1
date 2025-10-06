@@ -728,11 +728,7 @@
 				}
 			}
 
-			if ($payment && $payment->payment_method === 'Manual') {
-				$request = $this->dbh->prepare("UPDATE payments SET status = 'Rejected' WHERE id = ?");
-			} else {
-				$request = $this->dbh->prepare("UPDATE payments SET status = 'Unpaid', payment_method = NULL, reference_number = NULL, gcash_name = NULL, gcash_number = NULL, screenshot = NULL WHERE id = ?");
-			}
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Rejected', screenshot = NULL WHERE id = ?");
 
 			return $request->execute([$payment_id]);
 		}

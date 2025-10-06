@@ -70,7 +70,7 @@ $payments = $admins->fetchAllIndividualBill($customer_id);
                                         <td><?php echo $payment->amount; ?></td>
                                         <td><?php echo $payment->status; ?></td>
                                         <td>
-                                            <?php if ($payment->status == 'Unpaid'): ?>
+                                            <?php if ($payment->status == 'Unpaid' || $payment->status == 'Rejected'): ?>
                                                 <a href="payment_transaction.php?id=<?php echo $payment->id; ?>" class="btn btn-primary">Pay</a>
                                             <?php endif; ?>
                                         </td>
