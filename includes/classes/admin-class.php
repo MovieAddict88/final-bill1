@@ -713,7 +713,7 @@
 			}
 		}
 		public function getLastMonth($customer_id){
-			$request = $this->dbh->prepare("SELECT r_month FROM payments WHERE customer_id = ? LIMIT 1");
+			$request = $this->dbh->prepare("SELECT r_month FROM payments WHERE customer_id = ? ORDER BY id DESC LIMIT 1");
 			if ($request->execute([$customer_id])) {
 				return $request->fetch();
 			}
