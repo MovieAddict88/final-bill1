@@ -386,11 +386,19 @@
 			}
 		}
 
-		public function addManualPayment($customer_id, $employer_id, $package_id, $amount, $balance, $months)
+		public function addManualPayment($customer_id, $employer_id, $package_id, $amount, $months, $package_fee)
 		{
-			if (empty($months)) {
+			if (empty($months) || $package_fee <= 0) {
 				return false;
 			}
+
+			$num_months = count($months);
+			if ($num_months === 0) {
+				return false;
+			}
+
+			$amount_per_month = $amount / $num_months;
+			$balance_per_month = $package_fee - $amount_per_month;
 
 			try {
 				$this->dbh->beginTransaction();
@@ -412,7 +420,7 @@
 										   payment_method = 'Manual'
 									   WHERE customer_id = ? AND r_month = ?";
 						$update_stmt = $this->dbh->prepare($update_sql);
-						if (!$update_stmt->execute([$employer_id, $package_id, $amount, $balance, $customer_id, $month])) {
+						if (!$update_stmt->execute([$employer_id, $package_id, $amount_per_month, $balance_per_month, $customer_id, $month])) {
 							$this->dbh->rollBack();
 							return false;
 						}
@@ -421,7 +429,7 @@
 						$insert_sql = "INSERT INTO payments (customer_id, employer_id, package_id, amount, balance, r_month, status, payment_method)
 									   VALUES (?, ?, ?, ?, ?, ?, 'Pending', 'Manual')";
 						$insert_stmt = $this->dbh->prepare($insert_sql);
-						if (!$insert_stmt->execute([$customer_id, $employer_id, $package_id, $amount, $balance, $month])) {
+						if (!$insert_stmt->execute([$customer_id, $employer_id, $package_id, $amount_per_month, $balance_per_month, $month])) {
 							$this->dbh->rollBack();
 							return false;
 						}

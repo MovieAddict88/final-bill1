@@ -8,11 +8,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $employer_id = $_POST['employer_id'] ?? null;
     $package_id = $_POST['package_id'] ?? null;
     $amount = $_POST['amount'] ?? 0;
-    $balance = $_POST['balance'] ?? 0;
     $months = $_POST['months'] ?? [];
 
     if ($customer_id && $employer_id && $package_id && !empty($months)) {
-        if ($admins->addManualPayment($customer_id, $employer_id, $package_id, $amount, $balance, $months)) {
+        $package_info = $admins->getPackageInfo($package_id);
+        $package_fee = $package_info ? $package_info->fee : 0;
+
+        if ($admins->addManualPayment($customer_id, $employer_id, $package_id, $amount, $months, $package_fee)) {
             $_SESSION['success_message'] = "Manual payment submitted successfully and is pending approval.";
         } else {
             $_SESSION['error_message'] = "Failed to submit manual payment.";
