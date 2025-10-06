@@ -588,10 +588,10 @@
 			return false;
 		}
 
-		public function processPayment($payment_id, $payment_method, $reference_number)
+		public function processPayment($payment_id, $payment_method, $reference_number, $gcash_name = null, $gcash_number = null)
 		{
-			$request = $this->dbh->prepare("UPDATE payments SET status = 'Pending', payment_method = ?, reference_number = ? WHERE id = ?");
-			return $request->execute([$payment_method, $reference_number, $payment_id]);
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Pending', payment_method = ?, reference_number = ?, gcash_name = ?, gcash_number = ? WHERE id = ?");
+			return $request->execute([$payment_method, $reference_number, $gcash_name, $gcash_number, $payment_id]);
 		}
 
 		public function approvePayment($payment_id)

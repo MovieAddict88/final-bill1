@@ -58,6 +58,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <p><strong>Month:</strong> <?php echo $payment->r_month; ?></p>
                     <p><strong>Amount:</strong> <?php echo $payment->amount; ?></p>
                     <p><strong>Payment Method:</strong> <?php echo $payment->payment_method; ?></p>
+                    <?php if ($payment->payment_method === 'GCash'): ?>
+                        <p><strong>GCash Name:</strong> <?php echo $payment->gcash_name; ?></p>
+                        <p><strong>GCash Number:</strong> <?php echo $payment->gcash_number; ?></p>
+                    <?php endif; ?>
                     <p><strong>Reference Number:</strong> <?php echo $payment->reference_number; ?></p>
                     <hr>
                     <form action="" method="POST">
