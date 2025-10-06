@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $months = $_POST['months'] ?? [];
 
     if ($customer_id && $employer_id && $package_id && !empty($months)) {
-        if ($admins->addManualPayment($customer_id, $employer_id, $package_id, $amount, $balance, $months)) {
+        if ($admins->addManualPayment($customer_id, $employer_id, $package_id, $amount, $months)) {
             $_SESSION['success_message'] = "Manual payment submitted successfully and is pending approval.";
         } else {
             $_SESSION['error_message'] = "Failed to submit manual payment.";

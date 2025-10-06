@@ -126,6 +126,7 @@
 						c.id,
 						CASE
 							WHEN c.dropped = 1 OR EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid') THEN 'Unpaid'
+							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Pending') THEN 'Pending'
 							WHEN NOT EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id) THEN 'Prospects'
 							ELSE 'Paid'
 						END as status
@@ -160,6 +161,7 @@
 					c.*,
 					CASE
 						WHEN c.dropped = 1 OR EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid') THEN 'Unpaid'
+						WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Pending') THEN 'Pending'
 						WHEN NOT EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id) THEN 'Prospects'
 						ELSE 'Paid'
 					END as status
@@ -262,6 +264,7 @@
 						c.id,
 						CASE
 							WHEN c.dropped = 1 OR EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid') THEN 'Unpaid'
+							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Pending') THEN 'Pending'
 							WHEN NOT EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id) THEN 'Prospects'
 							ELSE 'Paid'
 						END as status
@@ -385,14 +388,45 @@
 			}
 		}
 
-		public function addManualPayment($customer_id, $employer_id, $package_id, $amount, $balance, $months)
+		public function addManualPayment($customer_id, $employer_id, $package_id, $amount_paid, $months)
 		{
-			$months_str = implode(', ', $months);
-			$request = $this->dbh->prepare(
-				"INSERT INTO payments (customer_id, employer_id, package_id, amount, balance, r_month, status, payment_method)
-				VALUES (?, ?, ?, ?, ?, ?, 'Pending', 'Manual')"
-			);
-			return $request->execute([$customer_id, $employer_id, $package_id, $amount, $balance, $months_str]);
+			try {
+				$package_info = $this->getPackageInfo($package_id);
+				if (!$package_info) {
+					return false;
+				}
+				$monthly_fee = $package_info->fee;
+				$amount_to_distribute = $amount_paid;
+
+				$this->dbh->beginTransaction();
+
+				$request = $this->dbh->prepare(
+					"INSERT INTO payments (customer_id, employer_id, package_id, amount, balance, r_month, status, payment_method)
+					VALUES (?, ?, ?, ?, ?, ?, 'Pending', 'Manual')"
+				);
+
+				foreach ($months as $month) {
+					if ($amount_to_distribute <= 0) {
+						continue;
+					}
+
+					$paid_for_this_month = min($amount_to_distribute, $monthly_fee);
+					$balance_for_this_month = $monthly_fee - $paid_for_this_month;
+
+					if (!$request->execute([$customer_id, $employer_id, $package_id, $monthly_fee, $balance_for_this_month, $month])) {
+						$this->dbh->rollBack();
+						return false;
+					}
+
+					$amount_to_distribute -= $paid_for_this_month;
+				}
+
+				$this->dbh->commit();
+				return true;
+			} catch (Exception $e) {
+				$this->dbh->rollBack();
+				return false;
+			}
 		}
 
 
