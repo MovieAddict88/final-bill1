@@ -405,7 +405,7 @@
 		public function fetchCustomer($limit = 10)
 		{
 			$limit = (int) $limit;
-			$request = $this->dbh->prepare("SELECT * FROM customers  ORDER BY id DESC  LIMIT :limit");
+			$request = $this->dbh->prepare("SELECT c.*, u.full_name as employer_name FROM customers c LEFT JOIN kp_user u ON c.employer_id = u.user_id ORDER BY c.id DESC  LIMIT :limit");
 			$request->bindValue(':limit', $limit, PDO::PARAM_INT);
 			if ($request->execute()) {
 				return $request->fetchAll();

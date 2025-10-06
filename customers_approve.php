@@ -163,6 +163,7 @@
 						<button type="submit" id="delete" onclick="delData(<?=$customer->id ?>)" class="btn btn-warning btn-sm">DELETE</button>
 					</td>
 					<td class="search"><?=$customer->full_name?></td>
+					<td class="search"><?=$customer->employer_name ? $customer->employer_name : 'N/A'?></td>
 					<td class="search"><?=$customer->nid?></td>
 					<td class="search"><?=$customer->address?></td>
 					<td class="search"><?=$package_name?></td>
