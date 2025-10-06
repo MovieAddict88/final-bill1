@@ -233,10 +233,16 @@
 			return false;
 		}
 
-		public function fetchAllIndividualBill($customer_id)
+		public function fetchAllIndividualBill($customer_id, $status = null)
 		{
-			$request = $this->dbh->prepare("SELECT * FROM `payments` where customer_id = ?");
-			if ($request->execute([$customer_id])) {
+			$sql = "SELECT * FROM `payments` WHERE customer_id = ?";
+			$params = [$customer_id];
+			if ($status !== null) {
+				$sql .= " AND status = ?";
+				$params[] = $status;
+			}
+			$request = $this->dbh->prepare($sql);
+			if ($request->execute($params)) {
 				return $request->fetchAll();
 			}
 			return false;
@@ -676,6 +682,36 @@
 
 			$request = $this->dbh->prepare("UPDATE payments SET status = 'Pending', payment_method = ?, reference_number = ?, gcash_name = ?, gcash_number = ?, screenshot = ? WHERE id = ?");
 			return $request->execute([$payment_method, $reference_number, $gcash_name, $gcash_number, $screenshot_path, $payment_id]);
+		}
+
+		public function processManualPayment($customer_id, $employer_id, $amount, $reference_number, $selected_bills, $screenshot = null)
+		{
+			$screenshot_path = null;
+			if ($screenshot && $screenshot['error'] == UPLOAD_ERR_OK) {
+				$upload_dir = 'uploads/screenshots/';
+				if (!is_dir($upload_dir)) {
+					mkdir($upload_dir, 0755, true);
+				}
+				$filename = uniqid() . '-' . preg_replace('/[^A-Za-z0-9.\-\_]/', '', basename($screenshot['name']));
+				$screenshot_path = $upload_dir . $filename;
+				move_uploaded_file($screenshot['tmp_name'], $screenshot_path);
+			}
+
+			try {
+				$this->dbh->beginTransaction();
+
+				$placeholders = rtrim(str_repeat('?,', count($selected_bills)), ',');
+				$request = $this->dbh->prepare("UPDATE payments SET status = 'Pending', payment_method = 'Manual', employer_id = ?, reference_number = ?, screenshot = ? WHERE id IN ($placeholders)");
+
+				$params = array_merge([$employer_id, $reference_number, $screenshot_path], $selected_bills);
+				$request->execute($params);
+
+				$this->dbh->commit();
+				return true;
+			} catch (Exception $e) {
+				$this->dbh->rollBack();
+				return false;
+			}
 		}
 
 		public function approvePayment($payment_id)
