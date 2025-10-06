@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once 'config/dbconnection.php';
 require_once 'includes/customer_header.php';
 require_once 'includes/classes/admin-class.php';
 
