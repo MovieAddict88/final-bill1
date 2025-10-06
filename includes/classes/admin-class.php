@@ -443,46 +443,6 @@
 			}
 		}
 
-		public function addManualPayment($customer_id, $employer_id, $package_id, $amount_paid, $months)
-		{
-			try {
-				$package_info = $this->getPackageInfo($package_id);
-				if (!$package_info) {
-					return false;
-				}
-				$monthly_fee = $package_info->fee;
-				$amount_to_distribute = $amount_paid;
-
-				$this->dbh->beginTransaction();
-
-				$request = $this->dbh->prepare(
-					"INSERT INTO payments (customer_id, employer_id, package_id, amount, balance, r_month, status, payment_method)
-					VALUES (?, ?, ?, ?, ?, ?, 'Pending', 'Manual')"
-				);
-
-				foreach ($months as $month) {
-					if ($amount_to_distribute <= 0) {
-						continue;
-					}
-
-					$paid_for_this_month = min($amount_to_distribute, $monthly_fee);
-					$balance_for_this_month = $monthly_fee - $paid_for_this_month;
-
-					if (!$request->execute([$customer_id, $employer_id, $package_id, $monthly_fee, $balance_for_this_month, $month])) {
-						$this->dbh->rollBack();
-						return false;
-					}
-
-					$amount_to_distribute -= $paid_for_this_month;
-				}
-
-				$this->dbh->commit();
-				return true;
-			} catch (Exception $e) {
-				$this->dbh->rollBack();
-				return false;
-			}
-		}
 
 
 		public function fetchCustomersByLocation($location, $limit = 10)
