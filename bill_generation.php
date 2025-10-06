@@ -9,7 +9,7 @@
 ?>
 	<div class="dashboard">
 		<div class="col-md-12 col-sm-12">
-		<div class="col-md-6"><h4><a href="bills.php" class="btn btn-sm btn-primary">  Back</a> Generated bills for Month of October</h4></div>
+		<div class="col-md-6"><h4><a href="bills.php" class="btn btn-sm btn-primary">  Back</a> Generated bills for Month of <?=date('F')?></h4></div>
 		<div class="col-md-6">
 			<form class="form-inline pull-right">
 			  <div class="form-group">
@@ -47,7 +47,7 @@
 							$package_id = $customer->package_id;
 							$packageInfo = $admins->getPackageInfo($package_id);
 							$amount = $packageInfo->fee;
-							$r_month = date('F');
+							$r_month = date('F Y');
 							$payments = $admins->getLastMonth($customer_id);
 							if(!empty($payments)){$last_month = $payments->r_month;}
 								if(isset($last_month) && $last_month == $r_month){ ?>

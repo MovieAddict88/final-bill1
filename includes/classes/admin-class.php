@@ -105,6 +105,16 @@
 			return false;
 		}
 
+		public function getEmployerNameById($id)
+		{
+			$request = $this->dbh->prepare("SELECT full_name FROM kp_user WHERE user_id = ?");
+			if ($request->execute([$id])) {
+				$result = $request->fetch();
+				return $result ? $result->full_name : null;
+			}
+			return null;
+		}
+
 		public function fetchCustomerStatusByEmployer($employer_id)
 		{
 			$request = $this->dbh->prepare("
@@ -115,15 +125,9 @@
 					SELECT
 						c.id,
 						CASE
-							WHEN c.dropped = 1 THEN 'Suspended'
-							-- Customer has unpaid bills from previous months
-							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.paid = 0 AND p.r_month < DATE_FORMAT(NOW(), '%Y-%m')) THEN 'Past Due'
-							-- Customer has an unpaid bill for the current month
-							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.paid = 0 AND p.r_month = DATE_FORMAT(NOW(), '%Y-%m')) THEN 'Due'
-							-- Customer has paid for the current month (and has no past due bills, which is checked by the order of the CASE)
-							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.paid = 1 AND p.r_month = DATE_FORMAT(NOW(), '%Y-%m')) THEN 'Paid'
-							-- Default for customers who don't fit other categories (e.g., new customers)
-							ELSE 'Prospects'
+							WHEN c.dropped = 1 OR EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid') THEN 'Unpaid'
+							WHEN NOT EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id) THEN 'Prospects'
+							ELSE 'Paid'
 						END as status
 					FROM
 						customers c
@@ -151,7 +155,23 @@
 		public function fetchCustomersByEmployer($employer_id, $limit = 10)
 		{
 			$limit = (int) $limit;
-			$request = $this->dbh->prepare("SELECT * FROM customers WHERE employer_id = ? ORDER BY id DESC  LIMIT ?");
+			$request = $this->dbh->prepare("
+				SELECT
+					c.*,
+					CASE
+						WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Pending') THEN 'Pending'
+						WHEN c.dropped = 1 OR EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid') THEN 'Unpaid'
+						WHEN NOT EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id) THEN 'Prospects'
+						ELSE 'Paid'
+					END as status
+				FROM
+					customers c
+				WHERE
+					c.employer_id = ?
+				ORDER BY
+					c.id DESC
+				LIMIT ?
+			");
 			$request->bindValue(1, $employer_id, PDO::PARAM_INT);
 			$request->bindValue(2, $limit, PDO::PARAM_INT);
 			if ($request->execute()) {
@@ -242,15 +262,9 @@
 					SELECT
 						c.id,
 						CASE
-							WHEN c.dropped = 1 THEN 'Suspended'
-							-- Customer has unpaid bills from previous months
-							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.paid = 0 AND p.r_month < DATE_FORMAT(NOW(), '%Y-%m')) THEN 'Past Due'
-							-- Customer has an unpaid bill for the current month
-							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.paid = 0 AND p.r_month = DATE_FORMAT(NOW(), '%Y-%m')) THEN 'Due'
-							-- Customer has paid for the current month (and has no past due bills, which is checked by the order of the CASE)
-							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.paid = 1 AND p.r_month = DATE_FORMAT(NOW(), '%Y-%m')) THEN 'Paid'
-							-- Default for customers who don't fit other categories (e.g., new customers)
-							ELSE 'Prospects'
+							WHEN c.dropped = 1 OR EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid') THEN 'Unpaid'
+							WHEN NOT EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id) THEN 'Prospects'
+							ELSE 'Paid'
 						END as status
 					FROM
 						customers c
@@ -366,6 +380,65 @@
 
 				$this->dbh->commit();
 				return true;
+			} catch (Exception $e) {
+				$this->dbh->rollBack();
+				return false;
+			}
+		}
+
+		public function addManualPayment($customer_id, $employer_id, $package_id, $amount, $months, $package_fee)
+		{
+			if (empty($months) || $package_fee <= 0) {
+				return false;
+			}
+
+			$num_months = count($months);
+			if ($num_months === 0) {
+				return false;
+			}
+
+			$amount_per_month = $amount / $num_months;
+			$balance_per_month = $package_fee - $amount_per_month;
+
+			try {
+				$this->dbh->beginTransaction();
+
+				foreach ($months as $month) {
+					// Check if a payment for this month already exists
+					$check_sql = "SELECT id FROM payments WHERE customer_id = ? AND r_month = ?";
+					$check_stmt = $this->dbh->prepare($check_sql);
+					$check_stmt->execute([$customer_id, $month]);
+
+					if ($check_stmt->fetch()) {
+						// Record exists, update it
+						$update_sql = "UPDATE payments
+									   SET employer_id = ?,
+										   package_id = ?,
+										   amount = ?,
+										   balance = ?,
+										   status = 'Pending',
+										   payment_method = 'Manual'
+									   WHERE customer_id = ? AND r_month = ?";
+						$update_stmt = $this->dbh->prepare($update_sql);
+						if (!$update_stmt->execute([$employer_id, $package_id, $amount_per_month, $balance_per_month, $customer_id, $month])) {
+							$this->dbh->rollBack();
+							return false;
+						}
+					} else {
+						// Record does not exist, insert it
+						$insert_sql = "INSERT INTO payments (customer_id, employer_id, package_id, amount, balance, r_month, status, payment_method)
+									   VALUES (?, ?, ?, ?, ?, ?, 'Pending', 'Manual')";
+						$insert_stmt = $this->dbh->prepare($insert_sql);
+						if (!$insert_stmt->execute([$customer_id, $employer_id, $package_id, $amount_per_month, $balance_per_month, $month])) {
+							$this->dbh->rollBack();
+							return false;
+						}
+					}
+				}
+
+				$this->dbh->commit();
+				return true;
+
 			} catch (Exception $e) {
 				$this->dbh->rollBack();
 				return false;
@@ -554,13 +627,14 @@
 			SELECT
 				id,
 				customer_id,
+				package_id,
 				r_month as months,
 				amount as total,
 				g_date,
 				p_date,
-				paid
+				status
 			FROM payments
-			WHERE paid = 0
+			WHERE status IN ('Unpaid', 'Pending')
 			ORDER BY id DESC
 			LIMIT :limit
 		");
@@ -572,11 +646,67 @@
 		}
 		 public function fetchindIvidualBill($customer_id)
 		{
-			$request = $this->dbh->prepare("SELECT * FROM `payments` where customer_id = ? and paid = 0");
+			$request = $this->dbh->prepare("SELECT * FROM `payments` where customer_id = ? and status = 'Unpaid'");
 			if ($request->execute([$customer_id])) {
 				return $request->fetchAll();
 			}
 			return false;
+		}
+
+		public function getPaymentById($id)
+		{
+			$request = $this->dbh->prepare("SELECT * FROM payments WHERE id = ?");
+			if ($request->execute([$id])) {
+				return $request->fetch();
+			}
+			return false;
+		}
+
+		public function processPayment($payment_id, $payment_method, $reference_number, $gcash_name = null, $gcash_number = null, $screenshot = null)
+		{
+			$screenshot_path = null;
+			if ($screenshot && $screenshot['error'] == UPLOAD_ERR_OK) {
+				$upload_dir = 'uploads/screenshots/';
+				if (!is_dir($upload_dir)) {
+					mkdir($upload_dir, 0755, true);
+				}
+				$filename = uniqid() . '-' . preg_replace('/[^A-Za-z0-9.\-\_]/', '', basename($screenshot['name']));
+				$screenshot_path = $upload_dir . $filename;
+				move_uploaded_file($screenshot['tmp_name'], $screenshot_path);
+			}
+
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Pending', payment_method = ?, reference_number = ?, gcash_name = ?, gcash_number = ?, screenshot = ? WHERE id = ?");
+			return $request->execute([$payment_method, $reference_number, $gcash_name, $gcash_number, $screenshot_path, $payment_id]);
+		}
+
+		public function approvePayment($payment_id)
+		{
+			$payment = $this->getPaymentById($payment_id);
+			if ($payment && $payment->screenshot) {
+				if (file_exists($payment->screenshot)) {
+					unlink($payment->screenshot);
+				}
+			}
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Paid', p_date = NOW(), screenshot = NULL WHERE id = ?");
+			return $request->execute([$payment_id]);
+		}
+
+		public function rejectPayment($payment_id)
+		{
+			$payment = $this->getPaymentById($payment_id);
+			if ($payment && $payment->screenshot) {
+				if (file_exists($payment->screenshot)) {
+					unlink($payment->screenshot);
+				}
+			}
+
+			if ($payment && $payment->payment_method === 'Manual') {
+				$request = $this->dbh->prepare("UPDATE payments SET status = 'Rejected' WHERE id = ?");
+			} else {
+				$request = $this->dbh->prepare("UPDATE payments SET status = 'Unpaid', payment_method = NULL, reference_number = NULL, gcash_name = NULL, gcash_number = NULL, screenshot = NULL WHERE id = ?");
+			}
+
+			return $request->execute([$payment_id]);
 		}
 		
 		public function getCustomerInfo($id)
@@ -664,7 +794,7 @@
 					$values = explode(',', $bill_id);
 					$placeholder = rtrim(str_repeat('?, ', count($values)), ', ');
 
-					$request2 = $this->dbh->prepare("UPDATE payments SET paid=1,p_date = NOW() WHERE id IN ($placeholder)");
+					$request2 = $this->dbh->prepare("UPDATE payments SET status='Paid',p_date = NOW() WHERE id IN ($placeholder)");
 					$request2->execute($values);
 				$this->dbh->commit();
 				return true;
@@ -686,7 +816,7 @@
 			}
 		}
 		public function getLastMonth($customer_id){
-			$request = $this->dbh->prepare("SELECT r_month FROM payments WHERE customer_id = ? LIMIT 1");
+			$request = $this->dbh->prepare("SELECT r_month FROM payments WHERE customer_id = ? ORDER BY id DESC LIMIT 1");
 			if ($request->execute([$customer_id])) {
 				return $request->fetch();
 			}

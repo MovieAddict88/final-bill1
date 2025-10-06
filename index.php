@@ -36,6 +36,7 @@ if ($user_role == 'employer') {
                             <th>Address</th>
                             <th>Contact</th>
                             <th>Login Code</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -48,14 +49,28 @@ if ($user_role == 'employer') {
                                     <td><?php echo htmlspecialchars($customer->contact); ?></td>
                                     <td><?php echo htmlspecialchars($customer->login_code); ?></td>
                                     <td>
+                                        <?php if ($customer->status == 'Pending'): ?>
+                                            <span class="badge badge-warning">Pending</span>
+                                        <?php elseif ($customer->status == 'Paid'): ?>
+                                            <span class="badge badge-success">Paid</span>
+                                        <?php elseif ($customer->status == 'Unpaid'): ?>
+                                            <span class="badge badge-danger">Unpaid</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-info"><?php echo htmlspecialchars($customer->status); ?></span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>&action=bill" class="btn btn-primary btn-sm">Invoice</a>
-                                        <a href="pay.php?customer=<?php echo $customer->id; ?>" class="btn btn-info btn-sm">Bill</a>
+                                        <?php if ($customer->status == 'Unpaid'): ?>
+                                            <a href="pay.php?customer=<?php echo $customer->id; ?>" class="btn btn-info btn-sm">Bill</a>
+                                            <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-success btn-sm">Pay</a>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="5">No customers found for this location.</td>
+                                <td colspan="6">No customers found for this location.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -275,11 +290,8 @@ include 'includes/footer.php';
                 var backgroundColors = [];
                 var statusColors = {
                     'Paid': 'rgba(40, 167, 69, 0.6)',
-                    'Past Due': 'rgba(255, 193, 7, 0.6)',
-                    'Due': 'rgba(255, 193, 7, 0.6)',
-                    'Suspended': 'rgba(220, 53, 69, 0.6)',
-                    'Prospects': 'rgba(0, 123, 255, 0.6)',
-                    'Hibernated': 'rgba(108, 117, 125, 0.6)'
+                    'Unpaid': 'rgba(220, 53, 69, 0.6)',
+                    'Prospects': 'rgba(0, 123, 255, 0.6)'
                 };
 
                 var total = 0;
