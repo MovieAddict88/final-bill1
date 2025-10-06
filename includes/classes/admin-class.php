@@ -159,6 +159,7 @@
 				SELECT
 					c.*,
 					CASE
+						WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Pending') THEN 'Pending'
 						WHEN c.dropped = 1 OR EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid') THEN 'Unpaid'
 						WHEN NOT EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id) THEN 'Prospects'
 						ELSE 'Paid'
@@ -387,12 +388,53 @@
 
 		public function addManualPayment($customer_id, $employer_id, $package_id, $amount, $balance, $months)
 		{
-			$months_str = implode(', ', $months);
-			$request = $this->dbh->prepare(
-				"INSERT INTO payments (customer_id, employer_id, package_id, amount, balance, r_month, status, payment_method)
-				VALUES (?, ?, ?, ?, ?, ?, 'Pending', 'Manual')"
-			);
-			return $request->execute([$customer_id, $employer_id, $package_id, $amount, $balance, $months_str]);
+			if (empty($months)) {
+				return false;
+			}
+
+			try {
+				$this->dbh->beginTransaction();
+
+				foreach ($months as $month) {
+					// Check if a payment for this month already exists
+					$check_sql = "SELECT id FROM payments WHERE customer_id = ? AND r_month = ?";
+					$check_stmt = $this->dbh->prepare($check_sql);
+					$check_stmt->execute([$customer_id, $month]);
+
+					if ($check_stmt->fetch()) {
+						// Record exists, update it
+						$update_sql = "UPDATE payments
+									   SET employer_id = ?,
+										   package_id = ?,
+										   amount = ?,
+										   balance = ?,
+										   status = 'Pending',
+										   payment_method = 'Manual'
+									   WHERE customer_id = ? AND r_month = ?";
+						$update_stmt = $this->dbh->prepare($update_sql);
+						if (!$update_stmt->execute([$employer_id, $package_id, $amount, $balance, $customer_id, $month])) {
+							$this->dbh->rollBack();
+							return false;
+						}
+					} else {
+						// Record does not exist, insert it
+						$insert_sql = "INSERT INTO payments (customer_id, employer_id, package_id, amount, balance, r_month, status, payment_method)
+									   VALUES (?, ?, ?, ?, ?, ?, 'Pending', 'Manual')";
+						$insert_stmt = $this->dbh->prepare($insert_sql);
+						if (!$insert_stmt->execute([$customer_id, $employer_id, $package_id, $amount, $balance, $month])) {
+							$this->dbh->rollBack();
+							return false;
+						}
+					}
+				}
+
+				$this->dbh->commit();
+				return true;
+
+			} catch (Exception $e) {
+				$this->dbh->rollBack();
+				return false;
+			}
 		}
 
 

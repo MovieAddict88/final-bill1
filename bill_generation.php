@@ -47,7 +47,7 @@
 							$package_id = $customer->package_id;
 							$packageInfo = $admins->getPackageInfo($package_id);
 							$amount = $packageInfo->fee;
-							$r_month = date('F');
+							$r_month = date('F Y');
 							$payments = $admins->getLastMonth($customer_id);
 							if(!empty($payments)){$last_month = $payments->r_month;}
 								if(isset($last_month) && $last_month == $r_month){ ?>

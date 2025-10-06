@@ -48,11 +48,23 @@ if ($user_role == 'employer') {
                                     <td><?php echo htmlspecialchars($customer->address); ?></td>
                                     <td><?php echo htmlspecialchars($customer->contact); ?></td>
                                     <td><?php echo htmlspecialchars($customer->login_code); ?></td>
-                                    <td><?php echo htmlspecialchars($customer->status); ?></td>
+                                    <td>
+                                        <?php if ($customer->status == 'Pending'): ?>
+                                            <span class="badge badge-warning">Pending</span>
+                                        <?php elseif ($customer->status == 'Paid'): ?>
+                                            <span class="badge badge-success">Paid</span>
+                                        <?php elseif ($customer->status == 'Unpaid'): ?>
+                                            <span class="badge badge-danger">Unpaid</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-info"><?php echo htmlspecialchars($customer->status); ?></span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>&action=bill" class="btn btn-primary btn-sm">Invoice</a>
-                                        <a href="pay.php?customer=<?php echo $customer->id; ?>" class="btn btn-info btn-sm">Bill</a>
-                                        <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-success btn-sm">Pay</a>
+                                        <?php if ($customer->status == 'Unpaid'): ?>
+                                            <a href="pay.php?customer=<?php echo $customer->id; ?>" class="btn btn-info btn-sm">Bill</a>
+                                            <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-success btn-sm">Pay</a>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
