@@ -36,6 +36,7 @@ if ($user_role == 'employer') {
                             <th>Address</th>
                             <th>Contact</th>
                             <th>Login Code</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -47,6 +48,7 @@ if ($user_role == 'employer') {
                                     <td><?php echo htmlspecialchars($customer->address); ?></td>
                                     <td><?php echo htmlspecialchars($customer->contact); ?></td>
                                     <td><?php echo htmlspecialchars($customer->login_code); ?></td>
+                                    <td><?php echo htmlspecialchars($customer->status); ?></td>
                                     <td>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>&action=bill" class="btn btn-primary btn-sm">Invoice</a>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>" class="btn btn-info btn-sm">Bill</a>
@@ -55,7 +57,7 @@ if ($user_role == 'employer') {
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="5">No customers found for this location.</td>
+                                <td colspan="6">No customers found for this location.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -275,11 +277,8 @@ include 'includes/footer.php';
                 var backgroundColors = [];
                 var statusColors = {
                     'Paid': 'rgba(40, 167, 69, 0.6)',
-                    'Past Due': 'rgba(255, 193, 7, 0.6)',
-                    'Due': 'rgba(255, 193, 7, 0.6)',
-                    'Suspended': 'rgba(220, 53, 69, 0.6)',
-                    'Prospects': 'rgba(0, 123, 255, 0.6)',
-                    'Hibernated': 'rgba(108, 117, 125, 0.6)'
+                    'Unpaid': 'rgba(220, 53, 69, 0.6)',
+                    'Prospects': 'rgba(0, 123, 255, 0.6)'
                 };
 
                 var total = 0;

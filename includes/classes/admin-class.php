@@ -115,15 +115,9 @@
 					SELECT
 						c.id,
 						CASE
-							WHEN c.dropped = 1 THEN 'Suspended'
-							-- Customer has unpaid bills from previous months
-							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid' AND p.r_month < DATE_FORMAT(NOW(), '%Y-%m')) THEN 'Past Due'
-							-- Customer has an unpaid bill for the current month
-							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid' AND p.r_month = DATE_FORMAT(NOW(), '%Y-%m')) THEN 'Due'
-							-- Customer has paid for the current month (and has no past due bills, which is checked by the order of the CASE)
-							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Paid' AND p.r_month = DATE_FORMAT(NOW(), '%Y-%m')) THEN 'Paid'
-							-- Default for customers who don't fit other categories (e.g., new customers)
-							ELSE 'Prospects'
+							WHEN c.dropped = 1 OR EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid') THEN 'Unpaid'
+							WHEN NOT EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id) THEN 'Prospects'
+							ELSE 'Paid'
 						END as status
 					FROM
 						customers c
@@ -151,7 +145,22 @@
 		public function fetchCustomersByEmployer($employer_id, $limit = 10)
 		{
 			$limit = (int) $limit;
-			$request = $this->dbh->prepare("SELECT * FROM customers WHERE employer_id = ? ORDER BY id DESC  LIMIT ?");
+			$request = $this->dbh->prepare("
+				SELECT
+					c.*,
+					CASE
+						WHEN c.dropped = 1 OR EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid') THEN 'Unpaid'
+						WHEN NOT EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id) THEN 'Prospects'
+						ELSE 'Paid'
+					END as status
+				FROM
+					customers c
+				WHERE
+					c.employer_id = ?
+				ORDER BY
+					c.id DESC
+				LIMIT ?
+			");
 			$request->bindValue(1, $employer_id, PDO::PARAM_INT);
 			$request->bindValue(2, $limit, PDO::PARAM_INT);
 			if ($request->execute()) {
@@ -242,15 +251,9 @@
 					SELECT
 						c.id,
 						CASE
-							WHEN c.dropped = 1 THEN 'Suspended'
-							-- Customer has unpaid bills from previous months
-							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid' AND p.r_month < DATE_FORMAT(NOW(), '%Y-%m')) THEN 'Past Due'
-							-- Customer has an unpaid bill for the current month
-							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid' AND p.r_month = DATE_FORMAT(NOW(), '%Y-%m')) THEN 'Due'
-							-- Customer has paid for the current month (and has no past due bills, which is checked by the order of the CASE)
-							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Paid' AND p.r_month = DATE_FORMAT(NOW(), '%Y-%m')) THEN 'Paid'
-							-- Default for customers who don't fit other categories (e.g., new customers)
-							ELSE 'Prospects'
+							WHEN c.dropped = 1 OR EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid') THEN 'Unpaid'
+							WHEN NOT EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id) THEN 'Prospects'
+							ELSE 'Paid'
 						END as status
 					FROM
 						customers c
