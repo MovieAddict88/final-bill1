@@ -58,6 +58,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <p><strong>Month:</strong> <?php echo $payment->r_month; ?></p>
                     <p><strong>Amount:</strong> <?php echo $payment->amount; ?></p>
                     <p><strong>Payment Method:</strong> <?php echo $payment->payment_method; ?></p>
+                    <?php if ($payment->payment_method === 'Manual' && !empty($payment->employer_id)):
+                        $employer_name = $admins->getEmployerNameById($payment->employer_id);
+                        if ($employer_name): ?>
+                            <p><strong>Paid by Employer:</strong> <?php echo htmlspecialchars($employer_name); ?></p>
+                        <?php endif;
+                    endif; ?>
                     <?php if ($payment->payment_method === 'GCash'): ?>
                         <p><strong>GCash Name:</strong> <?php echo $payment->gcash_name; ?></p>
                         <p><strong>GCash Number:</strong> <?php echo $payment->gcash_number; ?></p>

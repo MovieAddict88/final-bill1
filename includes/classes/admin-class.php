@@ -105,6 +105,16 @@
 			return false;
 		}
 
+		public function getEmployerNameById($id)
+		{
+			$request = $this->dbh->prepare("SELECT full_name FROM kp_user WHERE user_id = ?");
+			if ($request->execute([$id])) {
+				$result = $request->fetch();
+				return $result ? $result->full_name : null;
+			}
+			return null;
+		}
+
 		public function fetchCustomerStatusByEmployer($employer_id)
 		{
 			$request = $this->dbh->prepare("
@@ -375,6 +385,16 @@
 			}
 		}
 
+		public function addManualPayment($customer_id, $employer_id, $package_id, $amount, $balance, $months)
+		{
+			$months_str = implode(', ', $months);
+			$request = $this->dbh->prepare(
+				"INSERT INTO payments (customer_id, employer_id, package_id, amount, balance, r_month, status, payment_method)
+				VALUES (?, ?, ?, ?, ?, ?, 'Pending', 'Manual')"
+			);
+			return $request->execute([$customer_id, $employer_id, $package_id, $amount, $balance, $months_str]);
+		}
+
 
 		public function fetchCustomersByLocation($location, $limit = 10)
 		{
@@ -557,6 +577,7 @@
 			SELECT
 				id,
 				customer_id,
+				package_id,
 				r_month as months,
 				amount as total,
 				g_date,
@@ -628,7 +649,13 @@
 					unlink($payment->screenshot);
 				}
 			}
-			$request = $this->dbh->prepare("UPDATE payments SET status = 'Unpaid', payment_method = NULL, reference_number = NULL, gcash_name = NULL, gcash_number = NULL, screenshot = NULL WHERE id = ?");
+
+			if ($payment && $payment->payment_method === 'Manual') {
+				$request = $this->dbh->prepare("UPDATE payments SET status = 'Rejected' WHERE id = ?");
+			} else {
+				$request = $this->dbh->prepare("UPDATE payments SET status = 'Unpaid', payment_method = NULL, reference_number = NULL, gcash_name = NULL, gcash_number = NULL, screenshot = NULL WHERE id = ?");
+			}
+
 			return $request->execute([$payment_id]);
 		}
 		

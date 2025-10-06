@@ -52,6 +52,7 @@ if ($user_role == 'employer') {
                                     <td>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>&action=bill" class="btn btn-primary btn-sm">Invoice</a>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>" class="btn btn-info btn-sm">Bill</a>
+                                        <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-success btn-sm">Pay</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

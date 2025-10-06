@@ -182,8 +182,11 @@ INSERT INTO `packages` (`id`, `name`, `fee`, `created_at`) VALUES
 CREATE TABLE `payments` (
   `id` int(10) NOT NULL,
   `customer_id` int(10) NOT NULL,
+  `employer_id` int(11) DEFAULT NULL,
+  `package_id` int(11) DEFAULT NULL,
   `r_month` varchar(255) NOT NULL,
   `amount` int(10) NOT NULL,
+  `balance` decimal(10,2) DEFAULT 0.00,
   `g_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `p_date` timestamp NULL DEFAULT NULL,
   `status` varchar(20) NOT NULL DEFAULT 'Unpaid',

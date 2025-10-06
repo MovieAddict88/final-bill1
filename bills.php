@@ -57,9 +57,9 @@
 			  		$client_id = $bill->customer_id;
 			  		$customer_info = $admins->getCustomerInfo($client_id);
 			  		$customer_name = $customer_info->full_name;
-						$package_id = $customer_info->package_id;
+						$package_id = !empty($bill->package_id) ? $bill->package_id : $customer_info->package_id;
 						$packageInfo = $admins->getPackageInfo($package_id);
-						$package_name = $packageInfo->name;
+						$package_name = $packageInfo ? $packageInfo->name : 'N/A';
 			  	 	?>
 			  <tr>
 			  	<td scope="row"><?=$bill->id?></td>
