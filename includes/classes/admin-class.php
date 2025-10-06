@@ -707,6 +707,38 @@
 
 			return $request->execute([$payment_id]);
 		}
+
+		public function checkManualPaymentExists($bill_id)
+		{
+			$request = $this->dbh->prepare("SELECT id FROM payments WHERE id = ? AND status = 'Pending'");
+			$request->execute([$bill_id]);
+			$payment_data = $request->fetchAll();
+			return sizeof($payment_data) != 0;
+		}
+
+		public function processManualPayment($customer_id, $bill_ids, $months, $reference_number, $total)
+		{
+			try {
+				$this->dbh->beginTransaction();
+
+				$request = $this->dbh->prepare(
+					"UPDATE payments SET status = 'Pending', payment_method = 'Manual', reference_number = ? WHERE id = ?"
+				);
+
+				foreach ($bill_ids as $bill_id) {
+					if (!$request->execute([$reference_number, $bill_id])) {
+						$this->dbh->rollBack();
+						return false;
+					}
+				}
+
+				$this->dbh->commit();
+				return true;
+			} catch (Exception $e) {
+				$this->dbh->rollBack();
+				return false;
+			}
+		}
 		
 		public function getCustomerInfo($id)
 		{

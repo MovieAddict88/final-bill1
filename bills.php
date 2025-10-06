@@ -75,6 +75,7 @@
 					<?php else: ?>
 						<button type="button" onClick="pay(<?=$client_id?>)" class="btn btn-info">Pay</button>
 						<button onClick="bill(<?=$client_id?>)" type="button" class="btn btn-info">Bill</button>
+						<button type="button" onClick="manual_pay(<?=$client_id?>)" class="btn btn-success">Manual Pay</button>
 					<?php endif; ?>
 				</td>
 			  </tr>
@@ -113,5 +114,11 @@
 		let top = (screen.height/2)-(800/2);
 		let params = `scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no,width=600,height=800,left=${left},top=${top}`;
 		open('view_payment.php?id='+id, 'Payment Details', params)
+		}
+		function manual_pay(id) {
+		let left = (screen.width/2)-(800/2);
+	let top = (screen.height/2)-(600/2);
+		let params = `scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no,width=800,height=600,left=${left},top=${top}`;
+		open('manual_payment.php?customer='+id, 'Manual Payment', params)
 		}
 	</script>
