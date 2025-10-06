@@ -270,8 +270,7 @@
 		{
 			$details = [
 				'info' => null,
-				'unpaid_bills' => [],
-				'paid_bills' => [],
+				'bills' => [],
 				'transactions' => [],
 			];
 
@@ -281,16 +280,10 @@
 				$details['info'] = $request->fetch();
 			}
 
-			// Fetch unpaid bills
-			$request = $this->dbh->prepare("SELECT * FROM payments WHERE customer_id = ? AND paid = 0");
+			// Fetch all bills
+			$request = $this->dbh->prepare("SELECT * FROM payments WHERE customer_id = ?");
 			if ($request->execute([$customerId])) {
-				$details['unpaid_bills'] = $request->fetchAll();
-			}
-
-			// Fetch paid bills
-			$request = $this->dbh->prepare("SELECT * FROM payments WHERE customer_id = ? AND paid = 1");
-			if ($request->execute([$customerId])) {
-				$details['paid_bills'] = $request->fetchAll();
+				$details['bills'] = $request->fetchAll();
 			}
 
 			// Fetch transactions
