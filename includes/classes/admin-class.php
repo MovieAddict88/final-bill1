@@ -115,7 +115,7 @@
 					u.location,
 					COUNT(c.id) AS total_customers,
 					SUM(CASE WHEN p.status = 'Paid' AND DATE_FORMAT(p.p_date, '%Y-%m') = :current_month THEN 1 ELSE 0 END) AS paid_customers,
-					SUM(CASE WHEN p.status != 'Paid' OR p.status IS NULL THEN 1 ELSE 0 END) AS unpaid_customers,
+					SUM(CASE WHEN c.id IS NOT NULL AND (p.status != 'Paid' OR p.status IS NULL) THEN 1 ELSE 0 END) AS unpaid_customers,
 					COALESCE(SUM(CASE WHEN p.status = 'Paid' AND DATE_FORMAT(p.p_date, '%Y-%m') = :current_month THEN p.amount ELSE 0 END), 0) AS monthly_paid_collection,
 					COALESCE(SUM(CASE WHEN p.status != 'Paid' AND DATE_FORMAT(p.g_date, '%Y-%m') = :current_month THEN p.balance ELSE 0 END), 0) AS monthly_unpaid_collection
 				FROM
