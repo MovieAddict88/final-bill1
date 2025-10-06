@@ -25,14 +25,16 @@ $monitoring_data = $admins->getEmployerMonitoringData();
         font-size: 2.2em;
         font-weight: 600;
         color: #2c3e50;
-        margin-bottom: 40px;
+        margin-bottom: 20px;
+        padding-top: 0;
+        padding-bottom: 0;
     }
 
     .monitoring-container {
         display: flex;
         flex-wrap: wrap;
         gap: 20px;
-        padding: 20px;
+        padding: 0 20px 20px;
         justify-content: center;
     }
 
