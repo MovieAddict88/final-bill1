@@ -47,6 +47,7 @@
 				    <th>Package</th>
 				    <th>Months</th>
 				    <th>Amounts</th>
+				    <th>Status</th>
 				    <th>Action</th>
 				  </tr>
 				</thead>
@@ -56,9 +57,9 @@
 			  		$client_id = $bill->customer_id;
 			  		$customer_info = $admins->getCustomerInfo($client_id);
 			  		$customer_name = $customer_info->full_name;
-						$package_id = $customer_info->package_id;
+						$package_id = !empty($bill->package_id) ? $bill->package_id : $customer_info->package_id;
 						$packageInfo = $admins->getPackageInfo($package_id);
-						$package_name = $packageInfo->name;
+						$package_name = $packageInfo ? $packageInfo->name : 'N/A';
 			  	 	?>
 			  <tr>
 			  	<td scope="row"><?=$bill->id?></td>
@@ -67,7 +68,16 @@
 			  	<td><?=$package_name?></td>
 			  	<td><?=$bill->months?></td>
 			  	<td>₱<?=number_format($bill->total, 2)?></td>
-			  	<td><button type="button" onClick=pay(<?=$client_id?>) class="btn btn-info">Pay</button> <button onClick=bill(<?=$client_id?>) type="button" class="btn btn-info">Bill</button></td>
+				<td><?=$bill->status?></td>
+				<td>
+					<?php if ($bill->status == 'Pending'): ?>
+						<button type="button" onClick="view_payment(<?=$bill->id?>)" class="btn btn-warning">View</button>
+					<?php else: ?>
+						<button type="button" onClick="pay(<?=$client_id?>)" class="btn btn-info">Pay</button>
+						<button onClick="bill(<?=$client_id?>)" type="button" class="btn btn-info">Bill</button>
+						<button type="button" onClick="manual_pay(<?=$client_id?>)" class="btn btn-success">Manual Pay</button>
+					<?php endif; ?>
+				</td>
 			  </tr>
 			  <?php
 			  	}
@@ -98,5 +108,17 @@
   	let top = (screen.height/2)-(800/2);
 		let params = `scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no,width=600,height=800,left=${left},top=${top}`;
 		open('pay.php?customer='+id+'&action=bill', 'Invoice', params)
+		}
+		function view_payment(id) {
+		let left = (screen.width/2)-(600/2);
+		let top = (screen.height/2)-(800/2);
+		let params = `scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no,width=600,height=800,left=${left},top=${top}`;
+		open('view_payment.php?id='+id, 'Payment Details', params)
+		}
+		function manual_pay(id) {
+		let left = (screen.width/2)-(800/2);
+	let top = (screen.height/2)-(600/2);
+		let params = `scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no,width=800,height=600,left=${left},top=${top}`;
+		open('manual_payment.php?customer='+id, 'Manual Payment', params)
 		}
 	</script>
