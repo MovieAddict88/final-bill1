@@ -558,9 +558,9 @@
 				amount as total,
 				g_date,
 				p_date,
-				paid
+				status
 			FROM payments
-			WHERE paid = 0
+			WHERE status IN ('Unpaid', 'Pending')
 			ORDER BY id DESC
 			LIMIT :limit
 		");
@@ -572,11 +572,38 @@
 		}
 		 public function fetchindIvidualBill($customer_id)
 		{
-			$request = $this->dbh->prepare("SELECT * FROM `payments` where customer_id = ? and paid = 0");
+			$request = $this->dbh->prepare("SELECT * FROM `payments` where customer_id = ? and status = 'Unpaid'");
 			if ($request->execute([$customer_id])) {
 				return $request->fetchAll();
 			}
 			return false;
+		}
+
+		public function getPaymentById($id)
+		{
+			$request = $this->dbh->prepare("SELECT * FROM payments WHERE id = ?");
+			if ($request->execute([$id])) {
+				return $request->fetch();
+			}
+			return false;
+		}
+
+		public function processPayment($payment_id, $payment_method, $reference_number)
+		{
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Pending', payment_method = ?, reference_number = ? WHERE id = ?");
+			return $request->execute([$payment_method, $reference_number, $payment_id]);
+		}
+
+		public function approvePayment($payment_id)
+		{
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Paid', p_date = NOW() WHERE id = ?");
+			return $request->execute([$payment_id]);
+		}
+
+		public function rejectPayment($payment_id)
+		{
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Unpaid', payment_method = NULL, reference_number = NULL WHERE id = ?");
+			return $request->execute([$payment_id]);
 		}
 		
 		public function getCustomerInfo($id)
@@ -664,7 +691,7 @@
 					$values = explode(',', $bill_id);
 					$placeholder = rtrim(str_repeat('?, ', count($values)), ', ');
 
-					$request2 = $this->dbh->prepare("UPDATE payments SET paid=1,p_date = NOW() WHERE id IN ($placeholder)");
+					$request2 = $this->dbh->prepare("UPDATE payments SET status='Paid',p_date = NOW() WHERE id IN ($placeholder)");
 					$request2->execute($values);
 				$this->dbh->commit();
 				return true;

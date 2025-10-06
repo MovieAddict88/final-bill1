@@ -185,8 +185,10 @@ CREATE TABLE `payments` (
   `r_month` varchar(255) NOT NULL,
   `amount` int(10) NOT NULL,
   `g_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `p_date` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `paid` tinyint(1) NOT NULL DEFAULT '0'
+  `p_date` timestamp NULL DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'Unpaid',
+  `payment_method` varchar(50) DEFAULT NULL,
+  `reference_number` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------

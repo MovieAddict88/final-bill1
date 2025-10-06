@@ -47,6 +47,7 @@
 				    <th>Package</th>
 				    <th>Months</th>
 				    <th>Amounts</th>
+				    <th>Status</th>
 				    <th>Action</th>
 				  </tr>
 				</thead>
@@ -67,7 +68,15 @@
 			  	<td><?=$package_name?></td>
 			  	<td><?=$bill->months?></td>
 			  	<td>₱<?=number_format($bill->total, 2)?></td>
-			  	<td><button type="button" onClick=pay(<?=$client_id?>) class="btn btn-info">Pay</button> <button onClick=bill(<?=$client_id?>) type="button" class="btn btn-info">Bill</button></td>
+				<td><?=$bill->status?></td>
+				<td>
+					<?php if ($bill->status == 'Pending'): ?>
+						<button type="button" onClick="view_payment(<?=$bill->id?>)" class="btn btn-warning">View</button>
+					<?php else: ?>
+						<button type="button" onClick="pay(<?=$client_id?>)" class="btn btn-info">Pay</button>
+						<button onClick="bill(<?=$client_id?>)" type="button" class="btn btn-info">Bill</button>
+					<?php endif; ?>
+				</td>
 			  </tr>
 			  <?php
 			  	}
@@ -98,5 +107,11 @@
   	let top = (screen.height/2)-(800/2);
 		let params = `scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no,width=600,height=800,left=${left},top=${top}`;
 		open('pay.php?customer='+id+'&action=bill', 'Invoice', params)
+		}
+		function view_payment(id) {
+		let left = (screen.width/2)-(600/2);
+		let top = (screen.height/2)-(800/2);
+		let params = `scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no,width=600,height=800,left=${left},top=${top}`;
+		open('view_payment.php?id='+id, 'Payment Details', params)
 		}
 	</script>
