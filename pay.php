@@ -107,7 +107,19 @@
             </div>
         </div>
         <div class="pull-right">Date: <?=date("j F Y")?></div><br>
-        <?php if ($action != 'bill'): ?>
+        <?php
+            $has_unpaid = false;
+            $bills = $admins->fetchAllIndividualBill($id);
+            if (isset($bills) && sizeof($bills) > 0) {
+                foreach ($bills as $bill) {
+                    if ($bill->status == 'Unpaid') {
+                        $has_unpaid = true;
+                        break;
+                    }
+                }
+            }
+        ?>
+        <?php if ($action != 'bill' && $has_unpaid): ?>
             <h3>Subject   : NOTICE FOR DISCONNECTION</h3>
         <?php endif; ?>
         <div class="em"><b>Name   : </b> <em><?=$info->full_name?></em></div>
@@ -128,27 +140,24 @@
             </thead>
             <tbody>
             <?php
-                if ($action == 'bill') {
-                    $bills = $admins->fetchAllIndividualBill($id);
-                } else {
-                    $bills = $admins->fetchindIvidualBill($id);
-                }
                 $total = 0;
                 $bill_ids = [];
                 $monthArray = [];
+                $unpaid_bills_exist = false;
                 if (isset($bills) && sizeof($bills) > 0){
                     foreach ($bills as $bill){
-                        if ($bill->paid == 0) {
+                        if ($bill->status == 'Unpaid') {
                             $total += $bill->amount;
+                            $monthArray[] = $bill->r_month;
+                            $bill_ids[] = $bill->id;
+                            $unpaid_bills_exist = true;
                         }
-                        $monthArray[]=$bill->r_month;
-                        $bill_ids[]=$bill->id;
                         ?>
                     <tr>
                        <td><?=$bill->r_month?></td>
                        <td>₱<?=number_format($bill->amount, 2)?></td>
                        <?php if ($action == 'bill'): ?>
-                           <td><?=($bill->paid == 1) ? 'Paid' : 'Unpaid'?></td>
+                           <td><?=$bill->status?></td>
                        <?php endif; ?>
                     </tr>
                 <?php   }
@@ -160,11 +169,11 @@
             </tbody>
         </table>
     </div>
-    <?php if ($action != 'bill'): ?>
+    <?php if ($action != 'bill' && $unpaid_bills_exist): ?>
     <div class="row no-print">
      <form class="form-inline" action="post_approve.php" method="POST">
             <input type="hidden" name="customer" value="<?=(isset($info->id) ? $info->id : '')?>">			
-            <input type="hidden" name="bills" value="<?=implode(isset($bill_ids) ? $bill_ids : [],',')?>">			
+            <input type="hidden" name="bills" value="<?=implode($bill_ids,',')?>">
             <div class="form-group">
             <label for="months"></label>
             <select class="selectpicker" name="months[]" id="months" multiple required title="Select months">
