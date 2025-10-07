@@ -782,3 +782,62 @@ Sidebar
   padding-bottom: 0;
   height: 33px !important;
 }
+
+/* Custom styles for notifications dropdown */
+.cd-top-nav .notifications ul {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 280px; /* A bit wider for notifications */
+  background-color: #1c1f22;
+  box-shadow: 0 1px 10px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  display: none; /* Hidden by default */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.cd-top-nav .notifications.selected > ul {
+  display: block; /* Show when selected */
+}
+
+.cd-top-nav .notifications ul li a {
+  display: block;
+  padding: 10px 15px;
+  color: #ffffff;
+  font-size: 1.3rem;
+  white-space: normal; /* Allow text to wrap */
+  line-height: 1.4;
+  border-bottom: 1px solid #373d44;
+}
+
+.cd-top-nav .notifications ul li:last-child a {
+  border-bottom: none;
+}
+
+.no-touch .cd-top-nav .notifications ul li a:hover {
+  background-color: #33383e;
+}
+
+/* Adjust notification icon and count */
+.cd-top-nav .notifications > a {
+    position: relative;
+    padding: 0 1em !important;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.cd-top-nav .notifications .count {
+    position: absolute;
+    top: 12px;
+    right: 5px;
+    background-color: #ff7e66;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 5px;
+    font-size: 1rem;
+    font-weight: bold;
+    line-height: 1;
+}

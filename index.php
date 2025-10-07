@@ -14,6 +14,7 @@ if ($user_role == 'employer') {
     $products = $admins->fetchProductsByEmployer($employer_id);
 ?>
 <h3>Employer Dashboard</h3>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
     .table-custom thead {
         background-color: #008080;
@@ -23,6 +24,45 @@ if ($user_role == 'employer') {
         background-color: #007bff;
         border-color: #007bff;
     }
+
+    #customer-status-progress-bars {
+        padding: 20px;
+        font-family: 'Poppins', sans-serif;
+    }
+    .progress-bar-item {
+        display: grid;
+        grid-template-columns: 100px 1fr 50px;
+        align-items: center;
+        margin-bottom: 15px;
+        gap: 15px;
+    }
+    .progress-bar-label {
+        font-weight: 500;
+        color: #333;
+        font-size: 1rem;
+    }
+    .progress-bar-wrapper {
+        height: 12px;
+        background-color: #e9ecef;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 6px;
+        transition: width 0.5s ease-in-out;
+    }
+    .progress-bar-value {
+        font-weight: 600;
+        color: #333;
+        font-size: 1.1rem;
+        text-align: right;
+    }
+
+    .progress-bar-fill.paid { background-color: #28a745; }
+    .progress-bar-fill.unpaid { background-color: #8B0000; }
+    .progress-bar-fill.reject { background-color: #dc3545; }
+    .progress-bar-fill.prospects { background-color: #6c757d; }
 </style>
 <div class="row">
     <div class="col-md-6">
@@ -36,6 +76,7 @@ if ($user_role == 'employer') {
                             <th>Address</th>
                             <th>Contact</th>
                             <th>Login Code</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -47,15 +88,17 @@ if ($user_role == 'employer') {
                                     <td><?php echo htmlspecialchars($customer->address); ?></td>
                                     <td><?php echo htmlspecialchars($customer->contact); ?></td>
                                     <td><?php echo htmlspecialchars($customer->login_code); ?></td>
+                                    <td><?php echo htmlspecialchars($customer->status); ?></td>
                                     <td>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>&action=bill" class="btn btn-primary btn-sm">Invoice</a>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>" class="btn btn-info btn-sm">Bill</a>
+                                        <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-success btn-sm">Pay</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="5">No customers found for this location.</td>
+                                <td colspan="6">No customers found for this location.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -103,11 +146,8 @@ if ($user_role == 'employer') {
             </div>
             <div class="panel-body">
                 <div class="row">
-                    <div class="col-md-8">
-                        <canvas id="customerStatusChart"></canvas>
-                    </div>
-                    <div class="col-md-4">
-                        <div id="customer-status-legend" class="chart-legend"></div>
+                    <div class="col-md-12">
+                        <div id="customer-status-progress-bars"></div>
                     </div>
                 </div>
             </div>
@@ -225,124 +265,50 @@ include 'includes/footer.php';
 <script type="text/javascript">
     $(document).ready(function() {
         <?php if ($user_role == 'employer'): ?>
-        // Plugin to draw text in the middle of a doughnut chart
-        Chart.pluginService.register({
-            beforeDraw: function(chart) {
-                if (chart.config.options.elements.center) {
-                    var ctx = chart.chart.ctx;
-                    var centerConfig = chart.config.options.elements.center;
-                    var fontStyle = centerConfig.fontStyle || 'Arial';
-                    var txt = centerConfig.text;
-                    var color = centerConfig.color || '#333';
-                    var maxFontSize = centerConfig.maxFontSize || 75;
-                    var sidePadding = centerConfig.sidePadding || 20;
-                    var sidePaddingCalculated = (sidePadding / 100) * (chart.innerRadius * 2)
-                    
-                    ctx.font = "30px " + fontStyle;
-                    var stringWidth = ctx.measureText(txt).width;
-                    var elementWidth = (chart.innerRadius * 2) - sidePaddingCalculated;
-                    var widthRatio = elementWidth / stringWidth;
-                    var newFontSize = Math.floor(30 * widthRatio);
-                    var elementHeight = (chart.innerRadius * 2);
-                    var fontSizeToUse = Math.min(newFontSize, elementHeight, maxFontSize);
-
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    var centerX = ((chart.chartArea.left + chart.chartArea.right) / 2);
-                    var centerY = ((chart.chartArea.top + chart.chartArea.bottom) / 2);
-                    ctx.font = fontSizeToUse + "px " + fontStyle;
-                    ctx.fillStyle = color;
-                    
-                    // Draw text in center
-                    ctx.fillText(txt, centerX, centerY - (fontSizeToUse / 4));
-
-                    // Draw subtext
-                    if(centerConfig.subText){
-                        ctx.font = (fontSizeToUse / 2) + "px " + fontStyle;
-                        ctx.fillText(centerConfig.subText, centerX, centerY + (fontSizeToUse / 2));
-                    }
-                }
-            }
-        });
-
         $.ajax({
             url: "customer_status_chart_data.php",
             method: "GET",
             dataType: 'JSON',
             success: function(data) {
-                var statuses = [];
-                var counts = [];
-                var backgroundColors = [];
-                var statusColors = {
-                    'Paid': 'rgba(40, 167, 69, 0.6)',
-                    'Past Due': 'rgba(255, 193, 7, 0.6)',
-                    'Due': 'rgba(255, 193, 7, 0.6)',
-                    'Suspended': 'rgba(220, 53, 69, 0.6)',
-                    'Prospects': 'rgba(0, 123, 255, 0.6)',
-                    'Hibernated': 'rgba(108, 117, 125, 0.6)'
-                };
-
                 var total = 0;
-                for (var i in data) {
-                    statuses.push(data[i].status);
-                    counts.push(data[i].count);
-                    backgroundColors.push(statusColors[data[i].status] || 'rgba(0, 0, 0, 0.1)');
-                    total += parseInt(data[i].count);
+                data.forEach(function(item) {
+                    total += parseInt(item.count);
+                });
+
+                var progressBarContainer = $('#customer-status-progress-bars');
+                progressBarContainer.empty();
+
+                if (data.length === 0) {
+                    progressBarContainer.html('<p>No customer data available.</p>');
+                    return;
                 }
+                
+                var statusOrder = ['Paid', 'Unpaid', 'Reject'];
+                
+                var dataMap = new Map();
+                data.forEach(function(item) {
+                    dataMap.set(item.status, item.count);
+                });
 
-                var chartdata = {
-                    labels: statuses,
-                    datasets: [{
-                        label: 'Customer Status',
-                        backgroundColor: backgroundColors,
-                        data: counts
-                    }]
-                };
+                statusOrder.forEach(function(status) {
+                    var count = parseInt(dataMap.get(status)) || 0;
+                    var percentage = (total > 0) ? (count / total) * 100 : 0;
+                    var statusClass = status.toLowerCase();
 
-                var ctx = $('#customerStatusChart');
-                if (ctx.length) {
-                    var pieChart = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: chartdata,
-                        options: {
-                            responsive: true,
-                            legend: {
-                                display: false
-                            },
-                            animation: {
-                                animateScale: true,
-                                animateRotate: true
-                            },
-                            cutoutPercentage: 70,
-                            elements: {
-                                center: {
-                                    text: total,
-                                    subText: 'Total',
-                                    color: '#333',
-                                    fontStyle: 'Arial',
-                                    sidePadding: 20
-                                }
-                            }
-                        }
-                    });
-
-                    // Generate custom legend
-                    var legendContainer = $('#customer-status-legend');
-                    var legendHtml = '<div>';
-                    pieChart.data.labels.forEach(function(label, index) {
-                        var color = pieChart.data.datasets[0].backgroundColor[index];
-                        var value = pieChart.data.datasets[0].data[index];
-                        legendHtml += '<div style="display: flex; align-items: center; margin-bottom: 5px;">' +
-                            '<span style="background-color:' + color + '; width: 20px; height: 10px; display: inline-block; margin-right: 8px; border-radius: 3px;"></span>' +
-                            '<span>' + label + ': ' + value + '</span>' +
-                            '</div>';
-                    });
-                    legendHtml += '</div>';
-                    legendContainer.html(legendHtml);
-                }
+                    var progressBarHtml =
+                        '<div class="progress-bar-item">' +
+                        '<div class="progress-bar-label">' + status + '</div>' +
+                        '<div class="progress-bar-wrapper">' +
+                        '<div class="progress-bar-fill ' + statusClass + '" style="width: ' + percentage + '%;"></div>' +
+                        '</div>' +
+                        '<div class="progress-bar-value">' + count + '</div>' +
+                        '</div>';
+                    progressBarContainer.append(progressBarHtml);
+                });
             },
             error: function(data) {
                 console.log(data);
+                $('#customer-status-progress-bars').html('<p>Error loading data.</p>');
             }
         });
         <?php else: ?>
