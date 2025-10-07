@@ -29,11 +29,16 @@
 
 				$errors = array();
 				// Check if password are the same
-				if (!$admins->addCustomer($full_name, $nid, $address, $conn_location, $email, $package, $ip_address, $conn_type, $contact, $login_code, $employer_id))
+				$customer_id = $admins->addCustomer($full_name, $nid, $address, $conn_location, $email, $package, $ip_address, $conn_type, $contact, $login_code, $employer_id);
+				if ($customer_id)
 				{
-					session::set('errors', ['Couldn\'t Add New Customer']);
-				}else{
+					$packageInfo = $admins->getPackageInfo($package);
+					$amount = $packageInfo->fee;
+					$r_month = date('F');
+					$admins->billGenerate($customer_id, $r_month, $amount);
 					session::set('confirm', 'New customer added successfully!');
+				}else{
+					session::set('errors', ['Couldn\'t Add New Customer']);
 				}
 			}
 	}else if($page == 'del'){
@@ -158,13 +163,16 @@
 						<button type="submit" id="delete" onclick="delData(<?=$customer->id ?>)" class="btn btn-warning btn-sm">DELETE</button>
 					</td>
 					<td class="search"><?=$customer->full_name?></td>
+					<td class="search"><?=$customer->employer_name ? $customer->employer_name : 'N/A'?></td>
 					<td class="search"><?=$customer->nid?></td>
 					<td class="search"><?=$customer->address?></td>
 					<td class="search"><?=$package_name?></td>
 					<td class="search"><?=$customer->ip_address?></td>
 					<td class="search"><?=$customer->email?></td>
-					<td class="search"><?=$customer->conn_type?></td>
 					<td class="search"><?=$customer->contact?></td>
+					<td class="search"><?=$customer->conn_type?></td>
+                    <td class="search"><?=number_format($customer->total_paid, 2)?></td>
+                    <td class="search"><?=number_format($customer->total_balance, 2)?></td>
 					<td class="search"><?=$customer->login_code?></td>
 				</tr>
 			<?php
