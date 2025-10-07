@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!empty($selected_bills)) {
         if ($admins->processManualPayment($customer_id, $employer_id, $amount, $reference_number, $selected_bills, $screenshot)) {
-            echo "<script>alert('Payment submitted successfully and is pending approval.'); window.close();</script>";
+            echo "<script>alert('Payment submitted successfully and is pending approval.'); window.location.href = 'index.php';</script>";
             exit();
         } else {
             $error_message = "Failed to process payment. Please try again.";

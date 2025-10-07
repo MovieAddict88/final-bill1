@@ -9,7 +9,7 @@
             private $dbengine   = 'mysql';
             private $dbhost     = 'localhost';
             private $dbuser     = 'root'; // Set your database username
-            private $dbpassword = ''; //Set your database password
+            private $dbpassword = 'password'; //Set your database password
             private $dbname     = 'kp_db';
 
         	function __construct()
@@ -23,6 +23,7 @@
 	               	// Or we'll have to do it in each function in which we query data from database
 	                $this->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_OBJ);
                     $this->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, FALSE);
+                    $this->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 	            }
 	            catch (PDOException $e){
