@@ -73,7 +73,7 @@
 					<button type="button" class="close" data-dismiss="modal">&times;</button>
 					<h4>Insert Data</h4>
 				</div>
-					<form action="" method="POST" id="insert_form">
+					<form action="" method="POST" id="insert_form" enctype="multipart/form-data">
 				<div class="modal-body">
 					    <!-- form content -->
 					      <div class="form-group">
@@ -113,6 +113,10 @@
 							<option value="employer">Employer</option>
 					        </select>
 					      </div>
+						  <div class="form-group">
+							<label for="profile_pic">Profile Picture</label>
+							<input type="file" class="form-control" id="profile_pic" name="profile_pic">
+						  </div>
 				</div>
 				<div class="modal-footer">
 							<button type="submit" class="btn btn-primary">Submit</button>
@@ -132,7 +136,9 @@
 		$.ajax({
 			url: "user_approve.php?p=add",
 			method:"POST",
-			data:$('#insert_form').serialize(),
+			data:new FormData(this),
+			contentType: false,
+			processData: false,
 			dataType: "json",
 			success: function (data) {
 				if (data.status == 'success') {
@@ -159,10 +165,14 @@
 		var id = del_id;
 		$.ajax({
 			method:"POST",
-			url: "user_approve.php?p=delta",
+			url: "user_approve.php?p=del",
 			data: "id="+id,
+			dataType: "json",
 			success: function (data){
-				viewData();
+				alert(data.message);
+				if (data.status == 'success') {
+					viewData();
+				}
 			}
 		});
 	}
