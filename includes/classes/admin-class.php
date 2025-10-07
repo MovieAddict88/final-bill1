@@ -374,8 +374,40 @@
 		 */
 		public function deleteUser($id)
 		{
-			$request = $this->dbh->prepare("DELETE FROM kp_user WHERE user_id = ?");
-			return $request->execute([$id]);
+			try {
+				$this->dbh->beginTransaction();
+
+				// Get all customer IDs associated with the user
+				$request = $this->dbh->prepare("SELECT id FROM customers WHERE employer_id = ?");
+				$request->execute([$id]);
+				$customer_ids = $request->fetchAll(PDO::FETCH_COLUMN);
+
+				if (!empty($customer_ids)) {
+					$in_placeholders = implode(',', array_fill(0, count($customer_ids), '?'));
+
+					// Delete from payments
+					$request = $this->dbh->prepare("DELETE FROM payments WHERE customer_id IN ($in_placeholders)");
+					$request->execute($customer_ids);
+
+					// Delete from billings
+					$request = $this->dbh->prepare("DELETE FROM billings WHERE customer_id IN ($in_placeholders)");
+					$request->execute($customer_ids);
+				}
+
+				// Delete from customers
+				$request = $this->dbh->prepare("DELETE FROM customers WHERE employer_id = ?");
+				$request->execute([$id]);
+
+				// Delete the user
+				$request = $this->dbh->prepare("DELETE FROM kp_user WHERE user_id = ?");
+				$request->execute([$id]);
+
+				$this->dbh->commit();
+				return true;
+			} catch (Exception $e) {
+				$this->dbh->rollBack();
+				return false;
+			}
 		}
 
 

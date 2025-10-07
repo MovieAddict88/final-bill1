@@ -141,7 +141,7 @@
 								</div>
 							</div>
 						</div>
-						<button type="submit" id="delete" onclick="delData(<?=$user->user_id ?>)" class="btn btn-warning btn-sm disabled">DELETE</button>
+						<button type="submit" id="delete" onclick="delData(<?=$user->user_id ?>)" class="btn btn-warning btn-sm">DELETE</button>
 					</td>
 					<td class="search"><?=$user->user_name?></td>
 					<td class="search"><?=$user->full_name?></td>
