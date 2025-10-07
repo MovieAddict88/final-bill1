@@ -721,7 +721,7 @@
 			return false;
 		}
 
-		public function processPayment($payment_id, $payment_method, $reference_number, $gcash_name = null, $gcash_number = null, $screenshot = null)
+		public function processPayment($payment_id, $payment_method, $reference_number, $gcash_name = null, $gcash_number = null, $paymaya_name = null, $paymaya_number = null, $screenshot = null)
 		{
 			$screenshot_path = null;
 			if ($screenshot && $screenshot['error'] == UPLOAD_ERR_OK) {
@@ -734,8 +734,8 @@
 				move_uploaded_file($screenshot['tmp_name'], $screenshot_path);
 			}
 
-			$request = $this->dbh->prepare("UPDATE payments SET status = 'Pending', payment_method = ?, reference_number = ?, gcash_name = ?, gcash_number = ?, screenshot = ? WHERE id = ?");
-			return $request->execute([$payment_method, $reference_number, $gcash_name, $gcash_number, $screenshot_path, $payment_id]);
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Pending', payment_method = ?, reference_number = ?, gcash_name = ?, gcash_number = ?, paymaya_name = ?, paymaya_number = ?, screenshot = ? WHERE id = ?");
+			return $request->execute([$payment_method, $reference_number, $gcash_name, $gcash_number, $paymaya_name, $paymaya_number, $screenshot_path, $payment_id]);
 		}
 
 		public function processManualPayment($customer_id, $employer_id, $amount, $reference_number, $selected_bills, $screenshot = null)

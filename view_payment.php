@@ -68,6 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <p><strong>GCash Name:</strong> <?php echo $payment->gcash_name; ?></p>
                         <p><strong>GCash Number:</strong> <?php echo $payment->gcash_number; ?></p>
                     <?php endif; ?>
+                    <?php if ($payment->payment_method === 'PayMaya'): ?>
+                        <p><strong>PayMaya Name:</strong> <?php echo $payment->paymaya_name; ?></p>
+                        <p><strong>PayMaya Number:</strong> <?php echo $payment->paymaya_number; ?></p>
+                    <?php endif; ?>
                     <p><strong>Reference Number:</strong> <?php echo $payment->reference_number; ?></p>
                     <?php if ($payment->screenshot && file_exists($payment->screenshot)): ?>
                         <p><strong>Screenshot:</strong></p>

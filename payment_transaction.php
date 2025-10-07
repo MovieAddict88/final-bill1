@@ -24,9 +24,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $reference_number = $_POST['reference_number'];
     $gcash_name = isset($_POST['gcash_name']) ? $_POST['gcash_name'] : null;
     $gcash_number = isset($_POST['gcash_number']) ? $_POST['gcash_number'] : null;
+    $paymaya_name = isset($_POST['paymaya_name']) ? $_POST['paymaya_name'] : null;
+    $paymaya_number = isset($_POST['paymaya_number']) ? $_POST['paymaya_number'] : null;
     $screenshot = isset($_FILES['screenshot']) ? $_FILES['screenshot'] : null;
 
-    if ($admins->processPayment($payment_id, $payment_method, $reference_number, $gcash_name, $gcash_number, $screenshot)) {
+    if ($admins->processPayment($payment_id, $payment_method, $reference_number, $gcash_name, $gcash_number, $paymaya_name, $paymaya_number, $screenshot)) {
         header('Location: customer_dashboard.php?payment=success');
         exit();
     } else {
@@ -36,6 +38,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 ?>
 
+<style>
+    #payment_method {
+        padding-left: 35px;
+        background-repeat: no-repeat;
+        background-position: 5px center;
+        background-size: 25px;
+    }
+</style>
 <div class="container">
     <div class="row">
         <div class="col-md-12">
@@ -53,11 +63,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="form-group">
                             <label for="payment_method">Payment Method</label>
                             <select name="payment_method" id="payment_method" class="form-control" required>
-                                <option value="GCash">GCash</option>
-                                <option value="PayMaya">PayMaya</option>
+                                <option value="GCash" data-icon="assets/gcash.png">GCash</option>
+                                <option value="PayMaya" data-icon="assets/paymaya.png">PayMaya</option>
                             </select>
                         </div>
-                        <div id="gcash_fields" style="display: none;">
+                        <div id="gcash_fields">
                             <div class="form-group">
                                 <label for="gcash_name">GCash Name</label>
                                 <input type="text" name="gcash_name" id="gcash_name" class="form-control">
@@ -65,6 +75,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="form-group">
                                 <label for="gcash_number">GCash Number</label>
                                 <input type="text" name="gcash_number" id="gcash_number" class="form-control">
+                            </div>
+                        </div>
+                        <div id="paymaya_fields" style="display: none;">
+                            <div class="form-group">
+                                <label for="paymaya_name">PayMaya Name</label>
+                                <input type="text" name="paymaya_name" id="paymaya_name" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="paymaya_number">PayMaya Number</label>
+                                <input type="text" name="paymaya_number" id="paymaya_number" class="form-control">
                             </div>
                         </div>
                         <div class="form-group">
@@ -84,21 +104,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-    document.getElementById('payment_method').addEventListener('change', function () {
+    const paymentMethodSelect = document.getElementById('payment_method');
+
+    const setBackgroundIcon = () => {
+        const selectedOption = paymentMethodSelect.options[paymentMethodSelect.selectedIndex];
+        const iconUrl = selectedOption.getAttribute('data-icon');
+        if (iconUrl) {
+            paymentMethodSelect.style.backgroundImage = `url('${iconUrl}')`;
+        } else {
+            paymentMethodSelect.style.backgroundImage = 'none';
+        }
+    };
+
+    paymentMethodSelect.addEventListener('change', function () {
         var gcashFields = document.getElementById('gcash_fields');
+        var paymayaFields = document.getElementById('paymaya_fields');
         if (this.value === 'GCash') {
             gcashFields.style.display = 'block';
+            paymayaFields.style.display = 'none';
             document.getElementById('gcash_name').required = true;
             document.getElementById('gcash_number').required = true;
-        } else {
+            document.getElementById('paymaya_name').required = false;
+            document.getElementById('paymaya_number').required = false;
+        } else if (this.value === 'PayMaya') {
             gcashFields.style.display = 'none';
+            paymayaFields.style.display = 'block';
             document.getElementById('gcash_name').required = false;
             document.getElementById('gcash_number').required = false;
+            document.getElementById('paymaya_name').required = true;
+            document.getElementById('paymaya_number').required = true;
         }
+        setBackgroundIcon();
     });
 
     // Trigger the change event on page load to set the initial state
-    document.getElementById('payment_method').dispatchEvent(new Event('change'));
+    paymentMethodSelect.dispatchEvent(new Event('change'));
 </script>
 
 <?php
