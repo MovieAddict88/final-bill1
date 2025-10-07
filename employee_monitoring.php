@@ -202,6 +202,8 @@ $monitoring_data = $admins->getEmployerMonitoringData();
     .unpaid-customers .stat-value { color: var(--primary-red); }
     .monthly-paid .stat-value { color: var(--dark-green); }
     .monthly-unpaid .stat-value { color: var(--dark-red); }
+    .total-balance .stat-value { color: var(--dark-red); }
+
 
     /* Colorful left borders */
     .stat-item {
@@ -213,6 +215,7 @@ $monitoring_data = $admins->getEmployerMonitoringData();
     .unpaid-customers { border-left-color: var(--primary-red); }
     .monthly-paid { border-left-color: var(--dark-green); }
     .monthly-unpaid { border-left-color: var(--dark-red); }
+    .total-balance { border-left-color: var(--dark-red); }
 
     .no-data {
         text-align: center;
@@ -376,6 +379,13 @@ $monitoring_data = $admins->getEmployerMonitoringData();
                             Month Unpaid Amount
                         </span>
                         <span class="stat-value">₱<?php echo number_format($data->stats['monthly_unpaid_collection'], 2); ?></span>
+                    </div>
+                    <div class="stat-item total-balance">
+                        <span class="stat-label">
+                            <i class="fas fa-balance-scale"></i>
+                            Total Balance
+                        </span>
+                        <span class="stat-value">₱<?php echo number_format($data->stats['total_balance'], 2); ?></span>
                     </div>
                 </div>
             </div>

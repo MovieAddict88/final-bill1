@@ -118,7 +118,8 @@
 					COUNT(DISTINCT CASE WHEN p.status = 'Paid' AND DATE_FORMAT(p.p_date, '%Y-%m') = :current_month THEN c.id END) AS paid_customers,
 					COUNT(DISTINCT CASE WHEN c.id IS NOT NULL AND (p.status != 'Paid' OR p.status IS NULL) THEN c.id END) AS unpaid_customers,
 					COALESCE(SUM(CASE WHEN p.status = 'Paid' AND DATE_FORMAT(p.p_date, '%Y-%m') = :current_month THEN p.amount ELSE 0 END), 0) AS monthly_paid_collection,
-					COALESCE(SUM(CASE WHEN p.status = 'Unpaid' AND DATE_FORMAT(p.g_date, '%Y-%m') = :current_month THEN p.amount ELSE 0 END), 0) AS monthly_unpaid_collection
+					COALESCE(SUM(CASE WHEN p.status = 'Unpaid' AND DATE_FORMAT(p.g_date, '%Y-%m') = :current_month THEN p.amount ELSE 0 END), 0) AS monthly_unpaid_collection,
+					COALESCE(SUM(p.balance), 0) AS total_balance
 				FROM
 					kp_user u
 				LEFT JOIN
@@ -151,6 +152,7 @@
 						'unpaid_customers' => (int)$row->unpaid_customers,
 						'monthly_paid_collection' => (float)$row->monthly_paid_collection,
 						'monthly_unpaid_collection' => (float)$row->monthly_unpaid_collection,
+						'total_balance' => (float)$row->total_balance,
 					],
 				];
 				$data[] = (object)$employer_data;
@@ -698,11 +700,41 @@
 			try {
 				$this->dbh->beginTransaction();
 
-				$placeholders = rtrim(str_repeat('?,', count($selected_bills)), ',');
-				$request = $this->dbh->prepare("UPDATE payments SET status = 'Pending', payment_method = 'Manual', employer_id = ?, reference_number = ?, screenshot = ? WHERE id IN ($placeholders)");
+				$remaining_amount = (float)$amount;
 
-				$params = array_merge([$employer_id, $reference_number, $screenshot_path], $selected_bills);
-				$request->execute($params);
+				foreach ($selected_bills as $bill_id) {
+					if ($remaining_amount <= 0) {
+						break;
+					}
+
+					$bill = $this->getPaymentById($bill_id);
+					if (!$bill) {
+						continue;
+					}
+
+					$due_amount = ($bill->balance > 0) ? (float)$bill->balance : (float)$bill->amount;
+
+					if ($remaining_amount >= $due_amount) {
+						$new_balance = 0;
+						$payment_for_this_bill = $due_amount;
+					} else {
+						$new_balance = $due_amount - $remaining_amount;
+						$payment_for_this_bill = $remaining_amount;
+					}
+
+					$request = $this->dbh->prepare(
+						"UPDATE payments SET status = 'Pending', balance = ?, payment_method = 'Manual', employer_id = ?, reference_number = ?, screenshot = ? WHERE id = ?"
+					);
+					$request->execute([
+						$new_balance,
+						$employer_id,
+						$reference_number,
+						$screenshot_path,
+						$bill_id
+					]);
+
+					$remaining_amount -= $payment_for_this_bill;
+				}
 
 				$this->dbh->commit();
 				return true;

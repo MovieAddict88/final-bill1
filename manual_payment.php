@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </table>
                         <div class="form-group">
                             <label for="amount">Total Amount</label>
-                            <input type="number" name="amount" id="amount" class="form-control" readonly>
+                            <input type="number" name="amount" id="amount" class="form-control">
                         </div>
                         <div class="form-group">
                             <label for="reference_number">Reference Number</label>
