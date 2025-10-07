@@ -169,8 +169,10 @@
 					<td class="search"><?=$package_name?></td>
 					<td class="search"><?=$customer->ip_address?></td>
 					<td class="search"><?=$customer->email?></td>
-					<td class="search"><?=$customer->conn_type?></td>
 					<td class="search"><?=$customer->contact?></td>
+					<td class="search"><?=$customer->conn_type?></td>
+                    <td class="search"><?=number_format($customer->total_paid, 2)?></td>
+                    <td class="search"><?=number_format($customer->total_balance, 2)?></td>
 					<td class="search"><?=$customer->login_code?></td>
 				</tr>
 			<?php

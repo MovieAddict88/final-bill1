@@ -405,7 +405,29 @@
 		public function fetchCustomer($limit = 10)
 		{
 			$limit = (int) $limit;
-			$request = $this->dbh->prepare("SELECT c.*, u.full_name as employer_name FROM customers c LEFT JOIN kp_user u ON c.employer_id = u.user_id ORDER BY c.id DESC  LIMIT :limit");
+			$request = $this->dbh->prepare("
+                SELECT
+                    c.*,
+                    u.full_name as employer_name,
+                    COALESCE(p.total_paid, 0) as total_paid,
+                    COALESCE(p.total_balance, 0) as total_balance
+                FROM
+                    customers c
+                LEFT JOIN
+                    kp_user u ON c.employer_id = u.user_id
+                LEFT JOIN
+                    (SELECT
+                        customer_id,
+                        SUM(amount - balance) as total_paid,
+                        SUM(balance) as total_balance
+                    FROM
+                        payments
+                    GROUP BY
+                        customer_id
+                    ) p ON c.id = p.customer_id
+                ORDER BY
+                    c.id DESC
+                LIMIT :limit");
 			$request->bindValue(':limit', $limit, PDO::PARAM_INT);
 			if ($request->execute()) {
 				return $request->fetchAll();

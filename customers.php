@@ -62,6 +62,8 @@
 							<th>Email </th>
 							<th>Contact</th>
 							<th>Type</th>
+                            <th>Amount Paid</th>
+                            <th>Balance</th>
 							<th>Login Code</th>
 						</tr>
 					</thead>

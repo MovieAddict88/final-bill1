@@ -92,24 +92,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const checkboxes = document.querySelectorAll('input[name="bills[]"]');
-        const amountInput = document.getElementById('amount');
-
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                let totalAmount = 0;
-                checkboxes.forEach(cb => {
-                    if (cb.checked) {
-                        totalAmount += parseFloat(cb.dataset.amount);
-                    }
-                });
-                amountInput.value = totalAmount.toFixed(2);
-            });
-        });
-    });
-</script>
 
 <?php
 require_once 'includes/customer_footer.php';
