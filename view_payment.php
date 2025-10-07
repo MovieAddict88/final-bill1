@@ -56,7 +56,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <hr>
                     <h4>Payment Information</h4>
                     <p><strong>Month:</strong> <?php echo $payment->r_month; ?></p>
-                    <p><strong>Amount:</strong> <?php echo $payment->amount; ?></p>
+                    <?php
+                        // Determine the correct amounts based on payment type
+                        if ($payment->r_month === 'Initial Payment') {
+                            // For initial payments, 'total_amount' comes from the package fee, and 'amount' is the paid amount.
+                            $total_amount = $payment->total_amount;
+                            $paid_amount = $payment->amount;
+                            $balance = $total_amount - $paid_amount;
+                        } else {
+                            // For regular bills, 'amount' is the total, and 'balance' is the remaining amount.
+                            $total_amount = $payment->amount;
+                            $balance = $payment->balance;
+                            $paid_amount = $total_amount - $balance;
+                        }
+                    ?>
+                    <p><strong>Total Amount:</strong> <?php echo htmlspecialchars(number_format($total_amount, 2)); ?></p>
+
+                    <?php // Only show the breakdown for partial payments
+                    if ($paid_amount > 0 && $paid_amount < $total_amount): ?>
+                        <p><strong>Paid Amount:</strong> <?php echo htmlspecialchars(number_format($paid_amount, 2)); ?></p>
+                        <p><strong>Balance:</strong> <?php echo htmlspecialchars(number_format($balance, 2)); ?></p>
+                    <?php endif; ?>
                     <p><strong>Payment Method:</strong> <?php echo $payment->payment_method; ?></p>
                     <?php if ($payment->payment_method === 'Manual' && !empty($payment->employer_id)):
                         $employer_name = $admins->getEmployerNameById($payment->employer_id);

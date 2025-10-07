@@ -714,7 +714,13 @@
 
 		public function getPaymentById($id)
 		{
-			$request = $this->dbh->prepare("SELECT * FROM payments WHERE id = ?");
+			$request = $this->dbh->prepare("
+				SELECT p.*, pkg.fee AS total_amount
+				FROM payments p
+				JOIN customers c ON p.customer_id = c.id
+				JOIN packages pkg ON c.package_id = pkg.id
+				WHERE p.id = ?
+			");
 			if ($request->execute([$id])) {
 				return $request->fetch();
 			}
