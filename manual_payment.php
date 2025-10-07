@@ -27,15 +27,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $screenshot = isset($_FILES['screenshot']) ? $_FILES['screenshot'] : null;
     $selected_bills = isset($_POST['bills']) ? $_POST['bills'] : [];
 
-    if (!empty($selected_bills)) {
-        if ($admins->processManualPayment($customer_id, $employer_id, $amount, $reference_number, $selected_bills, $screenshot)) {
-            echo "<script>alert('Payment submitted successfully and is pending approval.'); window.location.href = 'index.php';</script>";
-            exit();
+    if (!empty($unpaid_bills)) {
+        // Logic for when there are unpaid bills
+        if (!empty($selected_bills)) {
+            if ($admins->processManualPayment($customer_id, $employer_id, $amount, $reference_number, $selected_bills, $screenshot)) {
+                echo "<script>alert('Payment submitted successfully and is pending approval.'); window.location.href = 'index.php';</script>";
+                exit();
+            } else {
+                $error_message = "Failed to process payment. Please try again.";
+            }
         } else {
-            $error_message = "Failed to process payment. Please try again.";
+            $error_message = "Please select at least one bill to pay.";
         }
     } else {
-        $error_message = "Please select at least one bill to pay.";
+        // Logic for when there are no unpaid bills (initial payment)
+        if ($admins->addManualPayment($customer_id, $employer_id, $amount, $reference_number, $screenshot)) {
+            echo "<script>alert('Initial payment submitted successfully and is pending approval.'); window.location.href = 'index.php';</script>";
+            exit();
+        } else {
+            $error_message = "Failed to submit initial payment. An initial payment may already be pending.";
+        }
     }
 }
 ?>
@@ -53,28 +64,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php endif; ?>
                     <form action="" method="POST" enctype="multipart/form-data">
                         <input type="hidden" name="customer" value="<?php echo $customer_id; ?>">
-                        <h4>Unpaid Bills</h4>
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th></th>
-                                    <th>Month</th>
-                                    <th>Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($unpaid_bills as $bill): ?>
+
+                        <?php if (!empty($unpaid_bills)): ?>
+                            <h4>Unpaid Bills</h4>
+                            <table class="table">
+                                <thead>
                                     <tr>
-                                        <td><input type="checkbox" name="bills[]" value="<?php echo $bill->id; ?>" data-amount="<?php echo $bill->amount; ?>"></td>
-                                        <td><?php echo htmlspecialchars($bill->r_month); ?></td>
-                                        <td><?php echo htmlspecialchars($bill->amount); ?></td>
+                                        <th></th>
+                                        <th>Month</th>
+                                        <th>Amount</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($unpaid_bills as $bill): ?>
+                                        <tr>
+                                            <td><input type="checkbox" name="bills[]" value="<?php echo $bill->id; ?>" data-amount="<?php echo $bill->amount; ?>"></td>
+                                            <td><?php echo htmlspecialchars($bill->r_month); ?></td>
+                                            <td><?php echo htmlspecialchars($bill->amount); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php else: ?>
+                            <h4>Initial Payment</h4>
+                            <p>No unpaid bills found. You can make an initial payment for this customer.</p>
+                        <?php endif; ?>
+
                         <div class="form-group">
-                            <label for="amount">Total Amount</label>
-                            <input type="number" name="amount" id="amount" class="form-control">
+                            <label for="amount">Amount</label>
+                            <input type="number" name="amount" id="amount" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label for="reference_number">Reference Number</label>

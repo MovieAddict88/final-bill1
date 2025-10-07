@@ -798,6 +798,52 @@
 			}
 		}
 
+		public function addManualPayment($customer_id, $employer_id, $amount, $reference_number, $screenshot = null)
+		{
+			$screenshot_path = null;
+			if ($screenshot && $screenshot['error'] == UPLOAD_ERR_OK) {
+				$upload_dir = 'uploads/screenshots/';
+				if (!is_dir($upload_dir)) {
+					mkdir($upload_dir, 0755, true);
+				}
+				$filename = uniqid() . '-' . preg_replace('/[^A-Za-z0-9.\-\_]/', '', basename($screenshot['name']));
+				$screenshot_path = $upload_dir . $filename;
+				move_uploaded_file($screenshot['tmp_name'], $screenshot_path);
+			}
+
+			try {
+				$this->dbh->beginTransaction();
+
+				// Check if an initial payment is already pending approval
+				$check_request = $this->dbh->prepare("SELECT id FROM payments WHERE customer_id = ? AND status = 'Pending' AND r_month = 'Initial Payment'");
+				$check_request->execute([$customer_id]);
+				if ($check_request->fetch()) {
+					// To prevent duplicate submissions, we don't allow a new initial payment while one is pending.
+					$this->dbh->rollBack();
+					return false;
+				}
+
+				// Create a new bill record for this initial payment.
+				$request = $this->dbh->prepare(
+					"INSERT INTO payments (customer_id, employer_id, r_month, amount, balance, status, payment_method, reference_number, screenshot)
+					 VALUES (?, ?, 'Initial Payment', ?, 0, 'Pending', 'Manual', ?, ?)"
+				);
+				$request->execute([
+					$customer_id,
+					$employer_id,
+					$amount,
+					$reference_number,
+					$screenshot_path
+				]);
+
+				$this->dbh->commit();
+				return true;
+			} catch (Exception $e) {
+				$this->dbh->rollBack();
+				return false;
+			}
+		}
+
 		public function approvePayment($payment_id)
 		{
 			$payment = $this->getPaymentById($payment_id);
