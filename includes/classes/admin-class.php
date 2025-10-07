@@ -182,10 +182,10 @@
 						c.id,
 						CASE
 							WHEN c.dropped = 1 OR EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid') THEN 'Unpaid'
-							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Pending') THEN 'Pending'
 							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Rejected') THEN 'Reject'
-							WHEN NOT EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id) THEN 'Prospects'
-							ELSE 'Paid'
+							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Pending') THEN 'Pending'
+							WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Paid' AND NOT EXISTS (SELECT 1 FROM payments p2 WHERE p2.customer_id = c.id AND p2.status IN ('Unpaid', 'Rejected', 'Pending'))) THEN 'Paid'
+							ELSE 'Prospects'
 						END as status
 					FROM
 						customers c
