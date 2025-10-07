@@ -58,27 +58,33 @@ $payments = $admins->fetchAllIndividualBill($customer_id);
                             <tr>
                                 <th>Month</th>
                                 <th>Amount</th>
+                                <th>Paid</th>
+                                <th>Balance</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if ($payments): ?>
-                                <?php foreach ($payments as $payment): ?>
+                                <?php foreach ($payments as $payment):
+                                    $paid_amount = $payment->amount - $payment->balance;
+                                ?>
                                     <tr>
                                         <td><?php echo $payment->r_month; ?></td>
                                         <td><?php echo $payment->amount; ?></td>
+                                        <td><?php echo $paid_amount; ?></td>
+                                        <td><?php echo $payment->balance; ?></td>
                                         <td><?php echo $payment->status; ?></td>
                                         <td>
-                                            <?php if ($payment->status == 'Unpaid' || $payment->status == 'Rejected'): ?>
-                                                <a href="payment_transaction.php?id=<?php echo $payment->id; ?>" class="btn btn-primary">Pay</a>
+                                            <?php if ($payment->balance > 0): ?>
+                                                <a href="payment_transaction.php?id=<?php echo $payment->id; ?>" class="btn btn-primary">Pay Balance</a>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="4" class="text-center">No payment history found.</td>
+                                    <td colspan="6" class="text-center">No payment history found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
