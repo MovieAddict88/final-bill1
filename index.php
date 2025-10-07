@@ -23,6 +23,41 @@ if ($user_role == 'employer') {
         background-color: #007bff;
         border-color: #007bff;
     }
+
+    /* Styles for Mini Doughnut Charts */
+    #mini-chart-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        gap: 20px;
+        padding: 20px 10px;
+        font-family: 'Poppins', sans-serif;
+    }
+    .mini-chart-wrapper {
+        position: relative;
+        text-align: center;
+        width: 100%;
+        padding: 15px;
+        border-radius: 12px;
+        background: #f9f9f9;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .mini-chart-wrapper:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+    .mini-chart-wrapper canvas {
+        max-width: 150px;
+        max-height: 150px;
+        margin: 0 auto;
+    }
+    .chart-title {
+        margin-top: 15px;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #555;
+    }
 </style>
 <div class="row">
     <div class="col-md-6">
@@ -36,6 +71,7 @@ if ($user_role == 'employer') {
                             <th>Address</th>
                             <th>Contact</th>
                             <th>Login Code</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -47,15 +83,17 @@ if ($user_role == 'employer') {
                                     <td><?php echo htmlspecialchars($customer->address); ?></td>
                                     <td><?php echo htmlspecialchars($customer->contact); ?></td>
                                     <td><?php echo htmlspecialchars($customer->login_code); ?></td>
+                                    <td><?php echo htmlspecialchars($customer->status); ?></td>
                                     <td>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>&action=bill" class="btn btn-primary btn-sm">Invoice</a>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>" class="btn btn-info btn-sm">Bill</a>
+                                        <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-success btn-sm">Pay</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="5">No customers found for this location.</td>
+                                <td colspan="6">No customers found for this location.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -102,13 +140,8 @@ if ($user_role == 'employer') {
                 Overview - Subscribers Count
             </div>
             <div class="panel-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <canvas id="customerStatusChart"></canvas>
-                    </div>
-                    <div class="col-md-4">
-                        <div id="customer-status-legend" class="chart-legend"></div>
-                    </div>
+                <div class="row" id="mini-chart-container">
+                    <!-- Mini charts will be injected here by Chart.js -->
                 </div>
             </div>
         </div>
@@ -265,84 +298,94 @@ include 'includes/footer.php';
             }
         });
 
+		// New logic for mini doughnut charts
         $.ajax({
             url: "customer_status_chart_data.php",
             method: "GET",
             dataType: 'JSON',
             success: function(data) {
-                var statuses = [];
-                var counts = [];
-                var backgroundColors = [];
-                var statusColors = {
-                    'Paid': 'rgba(40, 167, 69, 0.6)',
-                    'Past Due': 'rgba(255, 193, 7, 0.6)',
-                    'Due': 'rgba(255, 193, 7, 0.6)',
-                    'Suspended': 'rgba(220, 53, 69, 0.6)',
-                    'Prospects': 'rgba(0, 123, 255, 0.6)',
-                    'Hibernated': 'rgba(108, 117, 125, 0.6)'
+                const statusOrder = ['Paid', 'Unpaid', 'Prospects', 'Reject'];
+                const statusColors = {
+                    'Paid': { background: 'rgba(40, 167, 69, 0.1)', color: '#28a745' },
+                    'Unpaid': { background: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' },
+                    'Prospects': { background: 'rgba(0, 123, 255, 0.1)', color: '#007bff' },
+                    'Reject': { background: 'rgba(108, 117, 125, 0.1)', color: '#6c757d' }
                 };
 
-                var total = 0;
-                for (var i in data) {
-                    statuses.push(data[i].status);
-                    counts.push(data[i].count);
-                    backgroundColors.push(statusColors[data[i].status] || 'rgba(0, 0, 0, 0.1)');
-                    total += parseInt(data[i].count);
+                let totalCustomers = 0;
+                const statusCounts = {};
+                statusOrder.forEach(status => statusCounts[status] = 0);
+
+                data.forEach(item => {
+                    if (statusCounts.hasOwnProperty(item.status)) {
+                        const count = parseInt(item.count, 10);
+                        statusCounts[item.status] = count;
+                        totalCustomers += count;
+                    }
+                });
+
+				// Handle 'Prospects' from DB if it exists, map to 'Prospect'
+                const dbProspects = data.find(item => item.status === 'Prospects');
+                if (dbProspects) {
+                    statusCounts['Prospects'] = parseInt(dbProspects.count, 10);
                 }
 
-                var chartdata = {
-                    labels: statuses,
-                    datasets: [{
-                        label: 'Customer Status',
-                        backgroundColor: backgroundColors,
-                        data: counts
-                    }]
-                };
 
-                var ctx = $('#customerStatusChart');
-                if (ctx.length) {
-                    var pieChart = new Chart(ctx, {
+                const container = $('#mini-chart-container');
+                container.empty();
+
+                statusOrder.forEach(status => {
+                    const count = statusCounts[status];
+                    const percentage = totalCustomers > 0 ? ((count / totalCustomers) * 100).toFixed(1) : 0;
+                    const colors = statusColors[status];
+
+                    const chartId = `mini-chart-${status.toLowerCase()}`;
+                    const chartHtml = `
+                        <div class="col-md-3 col-sm-6 text-center">
+                            <div class="mini-chart-wrapper">
+                                <canvas id="${chartId}"></canvas>
+                                <div class="chart-title">${status}</div>
+                            </div>
+                        </div>
+                    `;
+                    container.append(chartHtml);
+
+                    const ctx = document.getElementById(chartId).getContext('2d');
+                    new Chart(ctx, {
                         type: 'doughnut',
-                        data: chartdata,
+                        data: {
+                            datasets: [{
+                                data: [count, totalCustomers - count],
+                                backgroundColor: [colors.color, colors.background],
+                                borderWidth: 0
+                            }]
+                        },
                         options: {
                             responsive: true,
-                            legend: {
-                                display: false
-                            },
+                            maintainAspectRatio: false,
+                            cutoutPercentage: 75,
+                            legend: { display: false },
+                            tooltips: { enabled: false },
                             animation: {
                                 animateScale: true,
                                 animateRotate: true
                             },
-                            cutoutPercentage: 70,
                             elements: {
                                 center: {
-                                    text: total,
-                                    subText: 'Total',
-                                    color: '#333',
-                                    fontStyle: 'Arial',
+                                    text: `${percentage}%`,
+                                    subText: `${count} ${status}`,
+                                    color: colors.color,
+                                    fontStyle: 'Poppins',
                                     sidePadding: 20
                                 }
                             }
                         }
                     });
-
-                    // Generate custom legend
-                    var legendContainer = $('#customer-status-legend');
-                    var legendHtml = '<div>';
-                    pieChart.data.labels.forEach(function(label, index) {
-                        var color = pieChart.data.datasets[0].backgroundColor[index];
-                        var value = pieChart.data.datasets[0].data[index];
-                        legendHtml += '<div style="display: flex; align-items: center; margin-bottom: 5px;">' +
-                            '<span style="background-color:' + color + '; width: 20px; height: 10px; display: inline-block; margin-right: 8px; border-radius: 3px;"></span>' +
-                            '<span>' + label + ': ' + value + '</span>' +
-                            '</div>';
-                    });
-                    legendHtml += '</div>';
-                    legendContainer.html(legendHtml);
-                }
+                });
             },
-            error: function(data) {
-                console.log(data);
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("AJAX Error:", textStatus, errorThrown);
+                $('#mini-chart-container').html('<p class="text-center text-danger">Could not load chart data.</p>');
             }
         });
         <?php else: ?>

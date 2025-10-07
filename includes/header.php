@@ -89,6 +89,9 @@
 				<li class="users">
 					<a href="user.php">Users</a>
 				</li>
+				<li class="monitoring">
+					<a href="employee_monitoring.php">Employee/Monitoring</a>
+				</li>
 				<li><a href="logout.php">Logout</a></li>
 			</ul>
 			<!-- <ul>
