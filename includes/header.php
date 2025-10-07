@@ -21,6 +21,7 @@
 	<link rel="stylesheet" href="component/css/jquery.bootgrid.css"> <!-- Bootgrid stylesheet -->
 	<link rel="stylesheet" href="component/css/style.css"> <!-- Resource style -->
 	<link rel="stylesheet" href="component/css/reset.css"> <!-- Resource style -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 	<script src="component/js/modernizr.js"></script> <!-- Modernizr -->
 
   	
@@ -40,6 +41,15 @@
 
 		<nav class="cd-nav">
 			<ul class="cd-top-nav">
+                <?php if ($_SESSION['user_role'] == 'admin'): ?>
+                <li id="notifications-container" class="has-children notifications">
+                    <a href="#">
+                        <i class="fa fa-bell"></i>
+                        <span id="notification-count" class="count" style="display: none;"></span>
+                    </a>
+                    <ul id="notification-list"></ul>
+                </li>
+                <?php endif; ?>
 				<li class="has-children account">
 					<a href="#0">
 						<img src="component/img/cs.png" alt="avatar">

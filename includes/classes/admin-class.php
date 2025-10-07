@@ -1307,5 +1307,42 @@
 		// 	return false;
 		// }
 
+		public function getPendingPayments()
+		{
+			try {
+				$this->dbh->beginTransaction();
+
+				// Fetch pending payments that have not been notified
+				$request = $this->dbh->prepare("
+                    SELECT p.*, c.full_name
+                    FROM payments p
+                    JOIN customers c ON p.customer_id = c.id
+                    WHERE p.status = 'Pending' AND p.notification_sent = FALSE
+                ");
+				$request->execute();
+				$notifications = $request->fetchAll();
+
+				if (!empty($notifications)) {
+                    $payment_ids = array_map(function($payment) {
+                        return $payment->id;
+                    }, $notifications);
+
+                    $in_placeholders = implode(',', array_fill(0, count($payment_ids), '?'));
+
+					// Mark notifications as sent
+					$update_request = $this->dbh->prepare("UPDATE payments SET notification_sent = TRUE WHERE id IN ($in_placeholders)");
+					$update_request->execute($payment_ids);
+				}
+
+				$this->dbh->commit();
+				return $notifications;
+
+			} catch (Exception $e) {
+				$this->dbh->rollBack();
+				// Log the error or handle it appropriately
+				return [];
+			}
+		}
+
 	}
 

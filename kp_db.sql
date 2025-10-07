@@ -197,7 +197,8 @@ CREATE TABLE `payments` (
   `gcash_number` varchar(255) DEFAULT NULL,
   `paymaya_name` varchar(255) DEFAULT NULL,
   `paymaya_number` varchar(255) DEFAULT NULL,
-  `screenshot` varchar(255) DEFAULT NULL
+  `screenshot` varchar(255) DEFAULT NULL,
+  `notification_sent` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
