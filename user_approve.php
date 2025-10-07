@@ -69,12 +69,18 @@
 			exit();
 	}else if($page == 'del'){
 		$id = $_POST['id'];
+		$response = array();
 		if (!$admins->deleteUser($id)) 
 		{
-			echo "Sorry Data could not be deleted !";
+			$response['status'] = 'error';
+			$response['message'] = 'Sorry, the user could not be deleted.';
 		}else {
-			echo "Well! You've successfully deleted a product!";
+			$response['status'] = 'success';
+			$response['message'] = 'User deleted successfully!';
 		}
+		header('Content-Type: application/json');
+		echo json_encode($response);
+		exit();
 
 	}else if($page == 'edit'){
 		$username = $_POST['username'];

@@ -167,8 +167,12 @@
 			method:"POST",
 			url: "user_approve.php?p=del",
 			data: "id="+id,
+			dataType: "json",
 			success: function (data){
-				viewData();
+				alert(data.message);
+				if (data.status == 'success') {
+					viewData();
+				}
 			}
 		});
 	}
