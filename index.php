@@ -282,9 +282,9 @@ include 'includes/footer.php';
                     progressBarContainer.html('<p>No customer data available.</p>');
                     return;
                 }
-
-                var statusOrder = ['Paid', 'Unpaid', 'Reject', 'Prospects'];
-
+                
+                var statusOrder = ['Paid', 'Unpaid', 'Reject'];
+                
                 var dataMap = new Map();
                 data.forEach(function(item) {
                     dataMap.set(item.status, item.count);
