@@ -329,8 +329,7 @@ $monitoring_data = $admins->getEmployerMonitoringData();
             <div class="employer-card">
                 <div class="employer-header">
                     <div class="employer-avatar">
-                        <!-- Replace with dynamic avatar if available -->
-                        <img src="1112.jpg" alt="Employer Avatar">
+                        <img src="<?php echo !empty($data->info->profile_pic) ? htmlspecialchars($data->info->profile_pic) : '1112.jpg'; ?>" alt="Employer Avatar">
                         <div class="employer-status status-active"></div>
                     </div>
                     <div class="employer-details">

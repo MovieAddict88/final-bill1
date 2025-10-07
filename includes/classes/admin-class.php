@@ -83,12 +83,12 @@
 		 * 
 		 */
 		
-		public function addNewAdmin($user_name, $user_pwd, $email, $full_name, $address, $contact, $role = 'admin', $location = null)
+		public function addNewAdmin($user_name, $user_pwd, $email, $full_name, $address, $contact, $role = 'admin', $location = null, $profile_pic = null)
 		{
-			$request = $this->dbh->prepare("INSERT INTO kp_user (user_name, user_pwd, email, full_name, address, contact, role, location) VALUES(?,?,?,?,?,?,?,?) ");
+			$request = $this->dbh->prepare("INSERT INTO kp_user (user_name, user_pwd, email, full_name, address, contact, role, location, profile_pic) VALUES(?,?,?,?,?,?,?,?,?) ");
 
 			// Do not forget to encrypt the pasword before saving
-			return $request->execute([$user_name, session::hashPassword($user_pwd), $email, $full_name, $address, $contact, $role, $location]);
+			return $request->execute([$user_name, session::hashPassword($user_pwd), $email, $full_name, $address, $contact, $role, $location, $profile_pic]);
 		}
 		/**
 		 * Fetch admins
@@ -113,6 +113,7 @@
 					u.user_id,
 					u.full_name,
 					u.location,
+					u.profile_pic,
 					COUNT(DISTINCT c.id) AS total_customers,
 					COUNT(DISTINCT CASE WHEN p.status = 'Paid' AND DATE_FORMAT(p.p_date, '%Y-%m') = :current_month THEN c.id END) AS paid_customers,
 					COUNT(DISTINCT CASE WHEN c.id IS NOT NULL AND (p.status != 'Paid' OR p.status IS NULL) THEN c.id END) AS unpaid_customers,
@@ -142,6 +143,7 @@
 						'user_id' => $row->user_id,
 						'full_name' => $row->full_name,
 						'location' => $row->location,
+						'profile_pic' => $row->profile_pic,
 					],
 					'stats' => [
 						'total_customers' => (int)$row->total_customers,

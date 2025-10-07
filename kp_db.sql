@@ -139,7 +139,8 @@ CREATE TABLE `kp_user` (
   `c_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `authentication` int(1) NOT NULL DEFAULT '0',
   `role` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'admin',
-  `location` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
+  `location` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `profile_pic` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
