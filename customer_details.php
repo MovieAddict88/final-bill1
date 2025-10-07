@@ -19,8 +19,7 @@
     $customerId = $_GET['id'];
     $customerDetails = $admins->fetchCustomerDetails($customerId);
     $customerInfo = $customerDetails['info'];
-    $unpaidBills = $customerDetails['unpaid_bills'];
-    $paidBills = $customerDetails['paid_bills'];
+    $allBills = $customerDetails['bills'];
     $transactions = $customerDetails['transactions'];
     $employer = null;
     if ($customerInfo && $customerInfo->employer_id) {
@@ -41,7 +40,6 @@
 			<div class="panel-body">
                 <?php if ($customerInfo): ?>
                     <?php
-                        $allBills = array_merge($unpaidBills, $paidBills);
                         usort($allBills, function($a, $b) {
                             return strtotime($b->g_date) - strtotime($a->g_date);
                         });
@@ -102,10 +100,12 @@
                         <tbody>
                             <?php if ($allBills && count($allBills) > 0): ?>
                                 <?php foreach ($allBills as $bill):
-                                    if ($bill->paid) {
+                                    $paidAmount = 0;
+                                    $balance = $bill->amount;
+                                    if ($bill->status == 'Paid') {
                                         $paidAmount = $bill->amount;
                                         $balance = 0;
-                                    } else {
+                                    } else if ($bill->status == 'Pending') {
                                         $paidAmount = 0;
                                         $balance = $bill->amount;
                                     }
@@ -142,14 +142,16 @@
                             </thead>
                             <tbody>
                                 <?php foreach ($allBills as $bill):
-                                    if ($bill->paid) {
+                                    $paidAmount = 0;
+                                    $balance = $bill->amount;
+                                    $isCompleted = false;
+                                    if ($bill->status == 'Paid') {
                                         $paidAmount = $bill->amount;
                                         $balance = 0;
                                         $isCompleted = true;
-                                    } else {
+                                    } else if ($bill->status == 'Pending') {
                                         $paidAmount = 0;
                                         $balance = $bill->amount;
-                                        $isCompleted = false;
                                     }
                                 ?>
                                     <tr class="<?= $isCompleted ? 'completed-transaction' : '' ?>">

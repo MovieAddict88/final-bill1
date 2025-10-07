@@ -9,5 +9,5 @@
 
 	//Change the SITE_PATH with yours
 	//It can be http://localhost/theprojectfolder
-	define("SITE_PATH","/"); 
+	define("SITE_PATH","http://localhost:8000/");
 	

@@ -139,7 +139,8 @@ CREATE TABLE `kp_user` (
   `c_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `authentication` int(1) NOT NULL DEFAULT '0',
   `role` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'admin',
-  `location` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
+  `location` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `profile_pic` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
@@ -182,11 +183,19 @@ INSERT INTO `packages` (`id`, `name`, `fee`, `created_at`) VALUES
 CREATE TABLE `payments` (
   `id` int(10) NOT NULL,
   `customer_id` int(10) NOT NULL,
+  `employer_id` int(11) DEFAULT NULL,
+  `package_id` int(11) DEFAULT NULL,
   `r_month` varchar(255) NOT NULL,
   `amount` int(10) NOT NULL,
+  `balance` decimal(10,2) DEFAULT 0.00,
   `g_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `p_date` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `paid` tinyint(1) NOT NULL DEFAULT '0'
+  `p_date` timestamp NULL DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'Unpaid',
+  `payment_method` varchar(50) DEFAULT NULL,
+  `reference_number` varchar(255) DEFAULT NULL,
+  `gcash_name` varchar(255) DEFAULT NULL,
+  `gcash_number` varchar(255) DEFAULT NULL,
+  `screenshot` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
