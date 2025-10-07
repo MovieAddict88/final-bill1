@@ -54,6 +54,7 @@
 							<th>ID </th>
 							<th>Action</th>
 							<th>Name</th>
+							<th>Employer</th>
 							<th>NID</th>
 							<th>ADDRESS</th>
 							<th>Package</th>
