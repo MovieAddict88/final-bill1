@@ -23,6 +23,40 @@ if ($user_role == 'employer') {
         background-color: #007bff;
         border-color: #007bff;
     }
+
+    .progress-container {
+        width: 100%;
+        padding: 10px;
+    }
+    .progress-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .progress-label {
+        width: 80px;
+        font-size: 16px;
+    }
+    .progress-bar-background {
+        flex-grow: 1;
+        background-color: #f0f0f0;
+        height: 20px;
+        border-radius: 5px;
+        margin: 0 10px;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 5px;
+        text-align: right;
+        color: white;
+        font-weight: bold;
+        padding-right: 5px;
+    }
+    .progress-value {
+        width: 40px;
+        font-size: 16px;
+        text-align: right;
+    }
 </style>
 <div class="row">
     <div class="col-md-6">
@@ -104,15 +138,8 @@ if ($user_role == 'employer') {
             <div class="panel-heading">
                 Overview - Subscribers Count
             </div>
-            <div class="panel-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <canvas id="customerStatusChart"></canvas>
-                    </div>
-                    <div class="col-md-4">
-                        <div id="customer-status-legend" class="chart-legend"></div>
-                    </div>
-                </div>
+            <div class="panel-body" id="customer-status-progress-bars">
+                <!-- Progress bars will be generated here by JavaScript -->
             </div>
         </div>
     </div>
@@ -228,118 +255,55 @@ include 'includes/footer.php';
 <script type="text/javascript">
     $(document).ready(function() {
         <?php if ($user_role == 'employer'): ?>
-        // Plugin to draw text in the middle of a doughnut chart
-        Chart.pluginService.register({
-            beforeDraw: function(chart) {
-                if (chart.config.options.elements.center) {
-                    var ctx = chart.chart.ctx;
-                    var centerConfig = chart.config.options.elements.center;
-                    var fontStyle = centerConfig.fontStyle || 'Arial';
-                    var txt = centerConfig.text;
-                    var color = centerConfig.color || '#333';
-                    var maxFontSize = centerConfig.maxFontSize || 75;
-                    var sidePadding = centerConfig.sidePadding || 20;
-                    var sidePaddingCalculated = (sidePadding / 100) * (chart.innerRadius * 2)
-                    
-                    ctx.font = "30px " + fontStyle;
-                    var stringWidth = ctx.measureText(txt).width;
-                    var elementWidth = (chart.innerRadius * 2) - sidePaddingCalculated;
-                    var widthRatio = elementWidth / stringWidth;
-                    var newFontSize = Math.floor(30 * widthRatio);
-                    var elementHeight = (chart.innerRadius * 2);
-                    var fontSizeToUse = Math.min(newFontSize, elementHeight, maxFontSize);
-
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    var centerX = ((chart.chartArea.left + chart.chartArea.right) / 2);
-                    var centerY = ((chart.chartArea.top + chart.chartArea.bottom) / 2);
-                    ctx.font = fontSizeToUse + "px " + fontStyle;
-                    ctx.fillStyle = color;
-                    
-                    // Draw text in center
-                    ctx.fillText(txt, centerX, centerY - (fontSizeToUse / 4));
-
-                    // Draw subtext
-                    if(centerConfig.subText){
-                        ctx.font = (fontSizeToUse / 2) + "px " + fontStyle;
-                        ctx.fillText(centerConfig.subText, centerX, centerY + (fontSizeToUse / 2));
-                    }
-                }
-            }
-        });
-
         $.ajax({
             url: "customer_status_chart_data.php",
             method: "GET",
             dataType: 'JSON',
             success: function(data) {
-                var statuses = [];
-                var counts = [];
-                var backgroundColors = [];
-                var statusColors = {
-                    'Paid': 'rgba(40, 167, 69, 0.6)',
-                    'Unpaid': 'rgba(220, 53, 69, 0.6)',
-                    'Prospects': 'rgba(0, 123, 255, 0.6)'
+                var container = $('#customer-status-progress-bars');
+                if (!container.length) return;
+
+                var statusConfig = {
+                    'Paid': { label: 'Paid', color: '#28a745', order: 1 },
+                    'Unpaid': { label: 'Unpaid', color: '#8B0000', order: 2 },
+                    'Rejected': { label: 'Reject', color: '#dc3545', order: 3 },
+                    'Prospects': { label: 'Prospect', color: '#6c757d', order: 4 },
+                    'Pending': { label: 'Pending', color: '#ffc107', order: 5 }
                 };
 
-                var total = 0;
-                for (var i in data) {
-                    statuses.push(data[i].status);
-                    counts.push(data[i].count);
-                    backgroundColors.push(statusColors[data[i].status] || 'rgba(0, 0, 0, 0.1)');
-                    total += parseInt(data[i].count);
-                }
+                var total = data.reduce((acc, item) => acc + parseInt(item.count), 0);
 
-                var chartdata = {
-                    labels: statuses,
-                    datasets: [{
-                        label: 'Customer Status',
-                        backgroundColor: backgroundColors,
-                        data: counts
-                    }]
-                };
+                var displayData = data.map(item => {
+                    var config = statusConfig[item.status] || {
+                        label: item.status,
+                        color: '#333',
+                        order: 99
+                    };
+                    return {
+                        ...item,
+                        ...config,
+                        count: parseInt(item.count)
+                    };
+                });
 
-                var ctx = $('#customerStatusChart');
-                if (ctx.length) {
-                    var pieChart = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: chartdata,
-                        options: {
-                            responsive: true,
-                            legend: {
-                                display: false
-                            },
-                            animation: {
-                                animateScale: true,
-                                animateRotate: true
-                            },
-                            cutoutPercentage: 70,
-                            elements: {
-                                center: {
-                                    text: total,
-                                    subText: 'Total',
-                                    color: '#333',
-                                    fontStyle: 'Arial',
-                                    sidePadding: 20
-                                }
-                            }
-                        }
-                    });
+                displayData.sort((a, b) => a.order - b.order);
 
-                    // Generate custom legend
-                    var legendContainer = $('#customer-status-legend');
-                    var legendHtml = '<div>';
-                    pieChart.data.labels.forEach(function(label, index) {
-                        var color = pieChart.data.datasets[0].backgroundColor[index];
-                        var value = pieChart.data.datasets[0].data[index];
-                        legendHtml += '<div style="display: flex; align-items: center; margin-bottom: 5px;">' +
-                            '<span style="background-color:' + color + '; width: 20px; height: 10px; display: inline-block; margin-right: 8px; border-radius: 3px;"></span>' +
-                            '<span>' + label + ': ' + value + '</span>' +
-                            '</div>';
-                    });
-                    legendHtml += '</div>';
-                    legendContainer.html(legendHtml);
-                }
+                var progressHtml = '<div class="progress-container">';
+                displayData.forEach(function(item) {
+                    var percentage = (total > 0) ? (item.count / total) * 100 : 0;
+                    progressHtml += `
+                        <div class="progress-item">
+                            <div class="progress-label">${item.label}</div>
+                            <div class="progress-bar-background">
+                                <div class="progress-bar-fill" style="width: ${percentage}%; background-color: ${item.color};"></div>
+                            </div>
+                            <div class="progress-value">${item.count}</div>
+                        </div>
+                    `;
+                });
+                progressHtml += '</div>';
+
+                container.html(progressHtml);
             },
             error: function(data) {
                 console.log(data);
