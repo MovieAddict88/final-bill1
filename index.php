@@ -75,6 +75,8 @@ if ($user_role == 'employer') {
                             <th>Address</th>
                             <th>Contact</th>
                             <th>Login Code</th>
+                            <th>Paid</th>
+                            <th>Balance</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -87,17 +89,23 @@ if ($user_role == 'employer') {
                                     <td><?php echo htmlspecialchars($customer->address); ?></td>
                                     <td><?php echo htmlspecialchars($customer->contact); ?></td>
                                     <td><?php echo htmlspecialchars($customer->login_code); ?></td>
+                                    <td><?php echo htmlspecialchars(number_format($customer->total_paid, 2)); ?></td>
+                                    <td><?php echo htmlspecialchars(number_format($customer->total_balance, 2)); ?></td>
                                     <td><?php echo htmlspecialchars($customer->status); ?></td>
                                     <td>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>&action=bill" class="btn btn-primary btn-sm action-btn">Invoice</a>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>" class="btn btn-info btn-sm action-btn">Bill</a>
-                                        <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-success btn-sm action-btn">Pay</a>
+                                        <?php if ($customer->total_balance > 0): ?>
+                                            <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-warning btn-sm action-btn">Pay Balance</a>
+                                        <?php elseif ($customer->status != 'Paid' && $customer->status != 'Partial'): ?>
+                                            <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-success btn-sm action-btn">Pay</a>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="6">No customers found for this location.</td>
+                                <td colspan="8">No customers found for this location.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

@@ -216,15 +216,29 @@
 			$request = $this->dbh->prepare("
 				SELECT
 					c.*,
+					COALESCE(p.total_paid, 0) as total_paid,
+					COALESCE(p.total_balance, 0) as total_balance,
 					CASE
-						WHEN c.dropped = 1 OR EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid') THEN 'Unpaid'
-						WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Pending') THEN 'Pending'
-						WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Rejected') THEN 'Rejected'
-						WHEN NOT EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id) THEN 'Prospects'
-						ELSE 'Paid'
-					END as status
+						WHEN EXISTS (SELECT 1 FROM payments WHERE customer_id = c.id AND status = 'Pending') THEN 'Pending'
+						WHEN EXISTS (SELECT 1 FROM payments WHERE customer_id = c.id AND status = 'Rejected') THEN 'Rejected'
+						WHEN c.dropped = 1 THEN 'Unpaid'
+						WHEN COALESCE(p.total_balance, 0) > 0 THEN 'Partial'
+						WHEN COALESCE(p.total_paid, 0) > 0 AND COALESCE(p.total_balance, 0) <= 0 THEN 'Paid'
+						WHEN EXISTS (SELECT 1 FROM payments WHERE customer_id = c.id) THEN 'Unpaid'
+						ELSE 'Prospects'
+					END AS status
 				FROM
 					customers c
+				LEFT JOIN
+					(SELECT
+						customer_id,
+						SUM(amount - balance) as total_paid,
+						SUM(balance) as total_balance
+					FROM
+						payments
+					GROUP BY
+						customer_id
+					) p ON c.id = p.customer_id
 				WHERE
 					c.employer_id = ?
 				ORDER BY
