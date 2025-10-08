@@ -24,7 +24,7 @@ if (!isset($_SESSION['customer_id'])) {
 $customer_id = $_SESSION['customer_id'];
 $customer = $admins->getCustomerInfo($customer_id);
 $package = $admins->getPackageInfo($customer->package_id);
-$payments = $admins->fetchindIvidualBill($customer_id);
+$payments = $admins->fetchAllIndividualBill($customer_id);
 
 ?>
 
@@ -58,7 +58,10 @@ $payments = $admins->fetchindIvidualBill($customer_id);
                             <tr>
                                 <th>Month</th>
                                 <th>Amount</th>
+                                <th>Paid</th>
+                                <th>Balance</th>
                                 <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -67,12 +70,19 @@ $payments = $admins->fetchindIvidualBill($customer_id);
                                     <tr>
                                         <td><?php echo $payment->r_month; ?></td>
                                         <td><?php echo $payment->amount; ?></td>
-                                        <td><?php echo $payment->paid ? 'Paid' : 'Unpaid'; ?></td>
+                                        <td><?php echo number_format($payment->paid, 2); ?></td>
+                                        <td><?php echo number_format($payment->balance, 2); ?></td>
+                                        <td><?php echo $payment->status; ?></td>
+                                        <td>
+                                            <?php if ($payment->balance > 0): ?>
+                                                <a href="payment_transaction.php?id=<?php echo $payment->id; ?>" class="btn btn-primary">Pay Balance</a>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="3" class="text-center">No payment history found.</td>
+                                    <td colspan="6" class="text-center">No payment history found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
