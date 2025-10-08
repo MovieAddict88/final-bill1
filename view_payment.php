@@ -56,7 +56,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <hr>
                     <h4>Payment Information</h4>
                     <p><strong>Month:</strong> <?php echo $payment->r_month; ?></p>
-                    <p><strong>Amount:</strong> <?php echo $payment->amount; ?></p>
+                    <?php
+                    $amount_paid = $payment->amount;
+                    if ($payment->payment_method === 'Manual' && $payment->status === 'Pending' && !empty($payment->gcash_name)) {
+                        $amount_paid = $payment->gcash_name;
+                    }
+                    ?>
+                    <p><strong>Amount:</strong> <?php echo $amount_paid; ?></p>
+                    <?php if ($payment->balance > 0): ?>
+                        <p><strong>Balance:</strong> <?php echo $payment->balance; ?></p>
+                    <?php endif; ?>
                     <p><strong>Payment Method:</strong> <?php echo $payment->payment_method; ?></p>
                     <?php if ($payment->payment_method === 'Manual' && !empty($payment->employer_id)):
                         $employer_name = $admins->getEmployerNameById($payment->employer_id);

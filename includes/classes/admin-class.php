@@ -760,13 +760,14 @@
 					}
 
 					$request = $this->dbh->prepare(
-						"UPDATE payments SET status = 'Pending', balance = ?, payment_method = 'Manual', employer_id = ?, reference_number = ?, screenshot = ? WHERE id = ?"
+						"UPDATE payments SET status = 'Pending', balance = ?, payment_method = 'Manual', employer_id = ?, reference_number = ?, screenshot = ?, gcash_name = ? WHERE id = ?"
 					);
 					$request->execute([
 						$new_balance,
 						$employer_id,
 						$reference_number,
 						$screenshot_path,
+						$payment_for_this_bill,
 						$bill_id
 					]);
 
@@ -784,27 +785,31 @@
 		public function approvePayment($payment_id)
 		{
 			$payment = $this->getPaymentById($payment_id);
-			if ($payment && $payment->screenshot) {
-				if (file_exists($payment->screenshot)) {
-					unlink($payment->screenshot);
-				}
+			if (!$payment) {
+				return false;
 			}
-			$request = $this->dbh->prepare("UPDATE payments SET status = 'Paid', p_date = NOW(), screenshot = NULL WHERE id = ?");
-			return $request->execute([$payment_id]);
+			if ($payment->screenshot && file_exists($payment->screenshot)) {
+				unlink($payment->screenshot);
+			}
+			$new_status = ($payment->balance == 0) ? 'Paid' : 'Unpaid';
+			$request = $this->dbh->prepare("UPDATE payments SET status = ?, p_date = NOW(), screenshot = NULL, gcash_name = NULL WHERE id = ?");
+			return $request->execute([$new_status, $payment_id]);
 		}
 
 		public function rejectPayment($payment_id)
 		{
 			$payment = $this->getPaymentById($payment_id);
-			if ($payment && $payment->screenshot) {
-				if (file_exists($payment->screenshot)) {
-					unlink($payment->screenshot);
-				}
+			if (!$payment) {
+				return false;
 			}
 
-			$request = $this->dbh->prepare("UPDATE payments SET status = 'Rejected', screenshot = NULL WHERE id = ?");
+			if ($payment->screenshot && file_exists($payment->screenshot)) {
+				unlink($payment->screenshot);
+			}
+			$previous_balance = $payment->balance + (float)$payment->gcash_name;
 
-			return $request->execute([$payment_id]);
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Unpaid', balance = ?, screenshot = NULL, gcash_name = NULL WHERE id = ?");
+			return $request->execute([$previous_balance, $payment_id]);
 		}
 		
 		public function getCustomerInfo($id)
