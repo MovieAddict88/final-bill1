@@ -20,6 +20,32 @@
 			$address = $_POST['address'];
 			$contact = $_POST['contact'];
 			$role = $_POST['role'];
+			$profile_pic = null;
+
+			if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] == UPLOAD_ERR_OK) {
+				$upload_dir = 'uploads/';
+				if (!is_dir($upload_dir)) {
+					mkdir($upload_dir, 0755, true);
+				}
+
+				$allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+				$file_type = mime_content_type($_FILES['profile_pic']['tmp_name']);
+
+				if (!in_array($file_type, $allowed_types)) {
+					$response['status'] = 'error';
+					$response['message'] = 'Invalid file type. Only JPG, PNG, and GIF are allowed.';
+					header('Content-Type: application/json');
+					echo json_encode($response);
+					exit();
+				}
+
+				$filename = uniqid() . '-' . basename($_FILES['profile_pic']['name']);
+				$profile_pic = $upload_dir . $filename;
+
+				if (!move_uploaded_file($_FILES['profile_pic']['tmp_name'], $profile_pic)) {
+					$profile_pic = null;
+				}
+			}
 
 			$response = array();
 			// Check if password are the same
@@ -30,7 +56,7 @@
 			}elseif ($admins->adminExists($_POST['username'])) {
 				$response['status'] = 'error';
 				$response['message'] = 'This username is already in use by another admin.';
-			}elseif (!$admins->addNewAdmin($username, $password, $email, $fullname, $address, $contact, $role)) {
+			}elseif (!$admins->addNewAdmin($username, $password, $email, $fullname, $address, $contact, $role, null, $profile_pic)) {
 				$response['status'] = 'error';
 				$response['message'] = 'An error occured while saving the new admin.';
 			}else{
@@ -43,12 +69,18 @@
 			exit();
 	}else if($page == 'del'){
 		$id = $_POST['id'];
+		$response = array();
 		if (!$admins->deleteUser($id)) 
 		{
-			echo "Sorry Data could not be deleted !";
+			$response['status'] = 'error';
+			$response['message'] = 'Sorry, the user could not be deleted.';
 		}else {
-			echo "Well! You've successfully deleted a product!";
+			$response['status'] = 'success';
+			$response['message'] = 'User deleted successfully!';
 		}
+		header('Content-Type: application/json');
+		echo json_encode($response);
+		exit();
 
 	}else if($page == 'edit'){
 		$username = $_POST['username'];
@@ -115,7 +147,7 @@
 								</div>
 							</div>
 						</div>
-						<button type="submit" id="delete" onclick="delData(<?=$user->user_id ?>)" class="btn btn-warning btn-sm disabled">DELETE</button>
+						<button type="submit" id="delete" onclick="delData(<?=$user->user_id ?>)" class="btn btn-warning btn-sm">DELETE</button>
 					</td>
 					<td class="search"><?=$user->user_name?></td>
 					<td class="search"><?=$user->full_name?></td>
