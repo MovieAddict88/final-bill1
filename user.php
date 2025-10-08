@@ -165,7 +165,7 @@
 		var id = del_id;
 		$.ajax({
 			method:"POST",
-			url: "user_approve.php?p=delta",
+			url: "user_approve.php?p=del",
 			data: "id="+id,
 			success: function (data){
 				viewData();
