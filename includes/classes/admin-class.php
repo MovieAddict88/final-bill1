@@ -219,6 +219,7 @@
 					COALESCE(p.total_paid, 0) as total_paid,
 					COALESCE(p.total_balance, 0) as total_balance,
 					CASE
+						WHEN EXISTS (SELECT 1 FROM payments WHERE customer_id = c.id AND status = 'Unpaid') THEN 'Unpaid'
 						WHEN EXISTS (SELECT 1 FROM payments WHERE customer_id = c.id AND status = 'Pending') THEN 'Pending'
 						WHEN EXISTS (SELECT 1 FROM payments WHERE customer_id = c.id AND status = 'Rejected') THEN 'Rejected'
 						WHEN c.dropped = 1 THEN 'Unpaid'
