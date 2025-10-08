@@ -107,7 +107,19 @@
             </div>
         </div>
         <div class="pull-right">Date: <?=date("j F Y")?></div><br>
-        <?php if ($action != 'bill'): ?>
+        <?php
+            $has_unpaid = false;
+            $bills = $admins->fetchAllIndividualBill($id);
+            if (isset($bills) && sizeof($bills) > 0) {
+                foreach ($bills as $bill) {
+                    if ($bill->status == 'Unpaid') {
+                        $has_unpaid = true;
+                        break;
+                    }
+                }
+            }
+        ?>
+        <?php if ($action != 'bill' && $has_unpaid): ?>
             <h3>Subject   : NOTICE FOR DISCONNECTION</h3>
         <?php endif; ?>
         <div class="em"><b>Name   : </b> <em><?=$info->full_name?></em></div>
@@ -121,50 +133,44 @@
                 <tr>
                     <th>Billing Month</th>
                     <th>Amount</th>
-                    <?php if ($action == 'bill'): ?>
-                        <th>Status</th>
-                    <?php endif; ?>
+                    <th>Paid Amount</th>
+                    <th>Balance</th>
                 </tr>
             </thead>
             <tbody>
             <?php
-                if ($action == 'bill') {
-                    $bills = $admins->fetchAllIndividualBill($id);
-                } else {
-                    $bills = $admins->fetchindIvidualBill($id);
-                }
-                $total = 0;
+                $total_balance = 0;
                 $bill_ids = [];
                 $monthArray = [];
                 if (isset($bills) && sizeof($bills) > 0){
                     foreach ($bills as $bill){
-                        if ($bill->paid == 0) {
-                            $total += $bill->amount;
+                        $paidAmount = $bill->amount - $bill->balance;
+                        $total_balance += $bill->balance;
+                        if ($bill->status == 'Unpaid') {
+                            $monthArray[] = $bill->r_month;
+                            $bill_ids[] = $bill->id;
                         }
-                        $monthArray[]=$bill->r_month;
-                        $bill_ids[]=$bill->id;
                         ?>
                     <tr>
                        <td><?=$bill->r_month?></td>
                        <td>₱<?=number_format($bill->amount, 2)?></td>
-                       <?php if ($action == 'bill'): ?>
-                           <td><?=($bill->paid == 1) ? 'Paid' : 'Unpaid'?></td>
-                       <?php endif; ?>
+                       <td>₱<?=number_format($paidAmount, 2)?></td>
+                       <td>₱<?=number_format($bill->balance, 2)?></td>
                     </tr>
                 <?php   }
                 } else { ?>
                     <tr>
-                        <td colspan="<?=($action == 'bill') ? 3 : 2?>" class="text-center">No bills found.</td>
+                        <td colspan="4" class="text-center">No bills found.</td>
                     </tr>
                 <?php } ?>
             </tbody>
         </table>
     </div>
-    <?php if ($action != 'bill'): ?>
+    <?php if ($action != 'bill' && $total_balance > 0): ?>
     <div class="row no-print">
      <form class="form-inline" action="post_approve.php" method="POST">
             <input type="hidden" name="customer" value="<?=(isset($info->id) ? $info->id : '')?>">			
-            <input type="hidden" name="bills" value="<?=implode(isset($bill_ids) ? $bill_ids : [],',')?>">			
+            <input type="hidden" name="bills" value="<?=implode($bill_ids,',')?>">
             <div class="form-group">
             <label for="months"></label>
             <select class="selectpicker" name="months[]" id="months" multiple required title="Select months">
@@ -183,7 +189,7 @@
             </div>
             <div class="form-group">
             <label class="sr-only" for="total">Payment</label>
-            <input type="number" class="form-control disabled" name="total" id="total" placeholder="total" required="" value="<?=$total?>">
+            <input type="number" class="form-control disabled" name="total" id="total" placeholder="total" required="" value="<?=$total_balance?>">
             </div>
             <button type="submit" class="btn btn-primary">Paid</button>
         </form>
