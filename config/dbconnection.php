@@ -22,7 +22,7 @@
 	               	// This will allow me to have objects format of my data everytime i fetch from my database
 	               	// Or we'll have to do it in each function in which we query data from database
 	                $this->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_OBJ);
-                    $this->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, FALSE);
+                    $this->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, TRUE);
                     $this->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 	            }

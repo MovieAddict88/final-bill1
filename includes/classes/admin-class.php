@@ -216,15 +216,28 @@
 			$request = $this->dbh->prepare("
 				SELECT
 					c.*,
+					COALESCE(p_summary.paid, 0) as paid,
+					COALESCE(p_summary.balance, 0) as balance,
 					CASE
-						WHEN c.dropped = 1 OR EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Unpaid') THEN 'Unpaid'
 						WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Pending') THEN 'Pending'
 						WHEN EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id AND p.status = 'Rejected') THEN 'Reject'
-						WHEN NOT EXISTS (SELECT 1 FROM payments p WHERE p.customer_id = c.id) THEN 'Prospects'
-						ELSE 'Paid'
+						WHEN p_summary.balance > 0 AND p_summary.paid > 0 THEN 'Partial'
+						WHEN c.dropped = 1 OR p_summary.balance > 0 THEN 'Unpaid'
+						WHEN p_summary.paid > 0 THEN 'Paid'
+						ELSE 'Prospects'
 					END as status
 				FROM
 					customers c
+				LEFT JOIN (
+					SELECT
+						customer_id,
+						SUM(amount - balance) as paid,
+						SUM(balance) as balance
+					FROM
+						payments
+					GROUP BY
+						customer_id
+				) p_summary ON c.id = p_summary.customer_id
 				WHERE
 					c.employer_id = ?
 				ORDER BY

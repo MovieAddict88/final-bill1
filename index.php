@@ -65,7 +65,7 @@ if ($user_role == 'employer') {
     .progress-bar-fill.prospects { background-color: #6c757d; }
 </style>
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-12">
         <div class="panel panel-default">
             <div class="panel-heading">Your Assigned Customers</div>
             <div class="panel-body">
@@ -76,6 +76,8 @@ if ($user_role == 'employer') {
                             <th>Address</th>
                             <th>Contact</th>
                             <th>Login Code</th>
+                            <th>Paid</th>
+                            <th>Balance</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -88,17 +90,23 @@ if ($user_role == 'employer') {
                                     <td><?php echo htmlspecialchars($customer->address); ?></td>
                                     <td><?php echo htmlspecialchars($customer->contact); ?></td>
                                     <td><?php echo htmlspecialchars($customer->login_code); ?></td>
+                                    <td><?php echo htmlspecialchars(number_format((float)$customer->paid, 2)); ?></td>
+                                    <td><?php echo htmlspecialchars(number_format((float)$customer->balance, 2)); ?></td>
                                     <td><?php echo htmlspecialchars($customer->status); ?></td>
                                     <td>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>&action=bill" class="btn btn-primary btn-sm">Invoice</a>
                                         <a href="pay.php?customer=<?php echo $customer->id; ?>" class="btn btn-info btn-sm">Bill</a>
-                                        <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-success btn-sm">Pay</a>
+                                        <?php if ($customer->balance > 0): ?>
+                                            <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-warning btn-sm">Pay Balance</a>
+                                        <?php else: ?>
+                                            <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-success btn-sm">Pay</a>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="6">No customers found for this location.</td>
+                                <td colspan="8">No customers found for this location.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -106,7 +114,7 @@ if ($user_role == 'employer') {
             </div>
         </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-12">
         <div class="panel panel-default">
             <div class="panel-heading">Products Availed by Your Customers</div>
             <div class="panel-body">
