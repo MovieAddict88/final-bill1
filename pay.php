@@ -133,43 +133,40 @@
                 <tr>
                     <th>Billing Month</th>
                     <th>Amount</th>
-                    <?php if ($action == 'bill'): ?>
-                        <th>Status</th>
-                    <?php endif; ?>
+                    <th>Paid Amount</th>
+                    <th>Balance</th>
                 </tr>
             </thead>
             <tbody>
             <?php
-                $total = 0;
+                $total_balance = 0;
                 $bill_ids = [];
                 $monthArray = [];
-                $unpaid_bills_exist = false;
                 if (isset($bills) && sizeof($bills) > 0){
                     foreach ($bills as $bill){
+                        $paidAmount = $bill->amount - $bill->balance;
+                        $total_balance += $bill->balance;
                         if ($bill->status == 'Unpaid') {
-                            $total += $bill->amount;
                             $monthArray[] = $bill->r_month;
                             $bill_ids[] = $bill->id;
-                            $unpaid_bills_exist = true;
                         }
                         ?>
                     <tr>
                        <td><?=$bill->r_month?></td>
                        <td>₱<?=number_format($bill->amount, 2)?></td>
-                       <?php if ($action == 'bill'): ?>
-                           <td><?=$bill->status?></td>
-                       <?php endif; ?>
+                       <td>₱<?=number_format($paidAmount, 2)?></td>
+                       <td>₱<?=number_format($bill->balance, 2)?></td>
                     </tr>
                 <?php   }
                 } else { ?>
                     <tr>
-                        <td colspan="<?=($action == 'bill') ? 3 : 2?>" class="text-center">No bills found.</td>
+                        <td colspan="4" class="text-center">No bills found.</td>
                     </tr>
                 <?php } ?>
             </tbody>
         </table>
     </div>
-    <?php if ($action != 'bill' && $unpaid_bills_exist): ?>
+    <?php if ($action != 'bill' && $total_balance > 0): ?>
     <div class="row no-print">
      <form class="form-inline" action="post_approve.php" method="POST">
             <input type="hidden" name="customer" value="<?=(isset($info->id) ? $info->id : '')?>">			
@@ -192,7 +189,7 @@
             </div>
             <div class="form-group">
             <label class="sr-only" for="total">Payment</label>
-            <input type="number" class="form-control disabled" name="total" id="total" placeholder="total" required="" value="<?=$total?>">
+            <input type="number" class="form-control disabled" name="total" id="total" placeholder="total" required="" value="<?=$total_balance?>">
             </div>
             <button type="submit" class="btn btn-primary">Paid</button>
         </form>

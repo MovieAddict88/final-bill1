@@ -100,15 +100,8 @@
                         <tbody>
                             <?php if ($allBills && count($allBills) > 0): ?>
                                 <?php foreach ($allBills as $bill):
-                                    $paidAmount = 0;
-                                    $balance = $bill->amount;
-                                    if ($bill->status == 'Paid') {
-                                        $paidAmount = $bill->amount;
-                                        $balance = 0;
-                                    } else if ($bill->status == 'Pending') {
-                                        $paidAmount = 0;
-                                        $balance = $bill->amount;
-                                    }
+                                    $paidAmount = $bill->amount - $bill->balance;
+                                    $balance = $bill->balance;
                                 ?>
                                     <tr>
                                         <td><?= $packageName ?></td>
@@ -142,17 +135,9 @@
                             </thead>
                             <tbody>
                                 <?php foreach ($allBills as $bill):
-                                    $paidAmount = 0;
-                                    $balance = $bill->amount;
-                                    $isCompleted = false;
-                                    if ($bill->status == 'Paid') {
-                                        $paidAmount = $bill->amount;
-                                        $balance = 0;
-                                        $isCompleted = true;
-                                    } else if ($bill->status == 'Pending') {
-                                        $paidAmount = 0;
-                                        $balance = $bill->amount;
-                                    }
+                                    $paidAmount = $bill->amount - $bill->balance;
+                                    $balance = $bill->balance;
+                                    $isCompleted = ($bill->status == 'Paid');
                                 ?>
                                     <tr class="<?= $isCompleted ? 'completed-transaction' : '' ?>">
                                         <td><?= $packageName ?></td>
