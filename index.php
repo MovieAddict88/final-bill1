@@ -24,6 +24,11 @@ if ($user_role == 'employer') {
         border-color: #007bff;
     }
 
+    .action-btn {
+        width: 80px;
+        margin-bottom: 5px;
+    }
+
     .progress-container {
         width: 100%;
         padding: 10px;
@@ -84,9 +89,9 @@ if ($user_role == 'employer') {
                                     <td><?php echo htmlspecialchars($customer->login_code); ?></td>
                                     <td><?php echo htmlspecialchars($customer->status); ?></td>
                                     <td>
-                                        <a href="pay.php?customer=<?php echo $customer->id; ?>&action=bill" class="btn btn-primary btn-sm">Invoice</a>
-                                        <a href="pay.php?customer=<?php echo $customer->id; ?>" class="btn btn-info btn-sm">Bill</a>
-                                        <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-success btn-sm">Pay</a>
+                                        <a href="pay.php?customer=<?php echo $customer->id; ?>&action=bill" class="btn btn-primary btn-sm action-btn">Invoice</a>
+                                        <a href="pay.php?customer=<?php echo $customer->id; ?>" class="btn btn-info btn-sm action-btn">Bill</a>
+                                        <a href="manual_payment.php?customer=<?php echo $customer->id; ?>" class="btn btn-success btn-sm action-btn">Pay</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
