@@ -241,7 +241,7 @@
 
 		public function fetchAllIndividualBill($customer_id, $status = null)
 		{
-			$sql = "SELECT * FROM `payments` WHERE customer_id = ?";
+			$sql = "SELECT *, (`amount` - `balance`) as paid FROM `payments` WHERE customer_id = ?";
 			$params = [$customer_id];
 			if ($status !== null) {
 				$sql .= " AND status = ?";
