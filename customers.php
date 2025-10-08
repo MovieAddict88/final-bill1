@@ -54,6 +54,7 @@
 							<th>ID </th>
 							<th>Action</th>
 							<th>Name</th>
+							<th>Employer</th>
 							<th>NID</th>
 							<th>ADDRESS</th>
 							<th>Package</th>
@@ -61,6 +62,8 @@
 							<th>Email </th>
 							<th>Contact</th>
 							<th>Type</th>
+                            <th>Amount Paid</th>
+                            <th>Balance</th>
 							<th>Login Code</th>
 						</tr>
 					</thead>
