@@ -213,14 +213,7 @@ if ($user_role == 'employer') {
             Customer Connection Locations
         </div>
         <div class="panel-body">
-            <div class="row">
-                <div class="col-md-8">
-                    <canvas id="locationChart"></canvas>
-                </div>
-                <div class="col-md-4">
-                    <div id="location-legend" class="chart-legend"></div>
-                </div>
-            </div>
+            <canvas id="locationChart"></canvas>
         </div>
     </div>
 </div>
@@ -344,66 +337,111 @@ include 'includes/footer.php';
             method: "GET",
             dataType: 'JSON',
             success: function(data) {
-                var locations = [];
-                var counts = [];
-                var backgroundColors = [];
-
-                for (var i in data) {
-                    locations.push(data[i].conn_location);
-                    counts.push(data[i].count);
-                    // Auto-generate random colors
-                    var r = Math.floor(Math.random() * 255);
-                    var g = Math.floor(Math.random() * 255);
-                    var b = Math.floor(Math.random() * 255);
-                    backgroundColors.push('rgba(' + r + ',' + g + ',' + b + ', 0.6)');
+                if (!data || data.length === 0) {
+                    $('#locationChart').hide();
+                    return;
                 }
+
+                var locations = data.map(item => item.conn_location);
+                var counts = data.map(item => item.count);
+
+                var professionalColors = [
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(153, 102, 255, 0.6)',
+                    'rgba(255, 159, 64, 0.6)',
+                    'rgba(199, 199, 199, 0.6)',
+                    'rgba(83, 102, 255, 0.6)',
+                    'rgba(100, 255, 100, 0.6)',
+                    'rgba(255, 100, 100, 0.6)'
+                ];
+
+                var backgroundColors = data.map((_, index) => professionalColors[index % professionalColors.length]);
 
                 var chartdata = {
                     labels: locations,
                     datasets: [{
                         label: 'Customer Count',
                         backgroundColor: backgroundColors,
+                        borderColor: professionalColors.map(color => color.replace('0.6', '1')),
+                        borderWidth: 1,
                         data: counts
                     }]
                 };
 
                 var ctx = $('#locationChart');
+                if (!ctx.length) return;
 
-                var pieChart = new Chart(ctx, {
-                    type: 'doughnut',
+                var barChart = new Chart(ctx, {
+                    type: 'horizontalBar',
                     data: chartdata,
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         legend: {
-                           display: false
+                            display: false
                         },
                         title: {
-                            display: false,
-                            text: 'Customer Connection Locations'
+                            display: true,
+                            text: 'Customer Distribution by Location',
+                            fontSize: 16,
+                            fontColor: '#333'
+                        },
+                        scales: {
+                            xAxes: [{
+                                ticks: {
+                                    beginAtZero: true,
+                                    precision: 0,
+                                    fontColor: '#333'
+                                },
+                                gridLines: {
+                                    color: "rgba(0, 0, 0, 0.05)",
+                                }
+                            }],
+                            yAxes: [{
+                                ticks: {
+                                    fontColor: '#333'
+                                },
+                                gridLines: {
+                                    display: false
+                                }
+                            }]
+                        },
+                        tooltips: {
+                            enabled: true,
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0,0,0,0.7)',
+                            titleFontColor: '#fff',
+                            bodyFontColor: '#fff',
+                            borderColor: 'rgba(0,0,0,0.8)',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(tooltipItem, data) {
+                                    var label = data.datasets[tooltipItem.datasetIndex].label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += tooltipItem.xLabel;
+                                    return label;
+                                }
+                            }
                         },
                         animation: {
-                            animateScale: true,
-                            animateRotate: true
+                            duration: 1000,
+                            easing: 'easeInOutQuart'
                         }
                     }
                 });
+                var chartHeight = 50 + data.length * 30;
+                ctx.closest('.panel-body').css('height', chartHeight + 'px');
 
-                // FIXED: Generate custom legend with responsive classes
-                var legendContainer = $('#location-legend');
-                var legendHtml = '<div class="legend-items-container">'; // Remove inline column-count
-                pieChart.data.labels.forEach(function(label, index) {
-                    var color = pieChart.data.datasets[0].backgroundColor[index];
-                    var value = pieChart.data.datasets[0].data[index];
-                    legendHtml += '<div class="legend-item" style="display: flex; align-items: center; margin-bottom: 8px; padding: 4px 0;">' +
-                                 '<span class="legend-color" style="background-color:' + color + '; width: 20px; height: 10px; display: inline-block; margin-right: 8px; border-radius: 3px; flex-shrink: 0;"></span>' +
-                                 '<span class="legend-text" style="flex: 1; min-width: 0;">' + label + ': ' + value + '</span>' +
-                                 '</div>';
-                });
-                legendHtml += '</div>';
-                legendContainer.html(legendHtml);
             },
-            error: function(data) {
-                console.log(data);
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("AJAX Error:", textStatus, errorThrown);
+                $('#locationChart').parent().html('<p class="text-center text-danger">Could not load chart data.</p>');
             }
         });
 
