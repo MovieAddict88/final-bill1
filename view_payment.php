@@ -56,27 +56,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <hr>
                     <h4>Payment Information</h4>
                     <p><strong>Month:</strong> <?php echo $payment->r_month; ?></p>
-                    <?php
-                    $amount_paid = $payment->amount;
-                    if ($payment->payment_method === 'Manual' && $payment->status === 'Pending' && !empty($payment->gcash_name)) {
-                        $amount_paid = $payment->gcash_name;
-                    }
-                    ?>
-                    <p><strong>Amount:</strong> <?php echo $amount_paid; ?></p>
-                    <?php if ($payment->balance > 0): ?>
-                        <p><strong>Balance:</strong> <?php echo $payment->balance; ?></p>
+                    <p><strong>Total Bill Amount:</strong> <?php echo number_format($payment->amount, 2); ?></p>
+
+                    <?php if ($payment->status === 'Pending'): ?>
+                        <p><strong>Amount Paid (this transaction):</strong> <?php echo number_format((float)$payment->gcash_name, 2); ?></p>
                     <?php endif; ?>
+
+                    <p><strong>Remaining Balance:</strong> <?php echo number_format($payment->balance, 2); ?></p>
                     <p><strong>Payment Method:</strong> <?php echo $payment->payment_method; ?></p>
+
                     <?php if ($payment->payment_method === 'Manual' && !empty($payment->employer_id)):
                         $employer_name = $admins->getEmployerNameById($payment->employer_id);
                         if ($employer_name): ?>
                             <p><strong>Paid by Employer:</strong> <?php echo htmlspecialchars($employer_name); ?></p>
                         <?php endif;
                     endif; ?>
+
                     <?php if ($payment->payment_method === 'GCash'): ?>
-                        <p><strong>GCash Name:</strong> <?php echo $payment->gcash_name; ?></p>
                         <p><strong>GCash Number:</strong> <?php echo $payment->gcash_number; ?></p>
                     <?php endif; ?>
+
                     <p><strong>Reference Number:</strong> <?php echo $payment->reference_number; ?></p>
                     <?php if ($payment->screenshot && file_exists($payment->screenshot)): ?>
                         <p><strong>Screenshot:</strong></p>

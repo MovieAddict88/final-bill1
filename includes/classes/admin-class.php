@@ -704,8 +704,16 @@
 			return false;
 		}
 
-		public function processPayment($payment_id, $payment_method, $reference_number, $gcash_name = null, $gcash_number = null, $screenshot = null)
+		public function processPayment($payment_id, $payment_method, $reference_number, $gcash_name_from_form = null, $gcash_number = null, $screenshot = null, $amount_paid = 0)
 		{
+			$payment = $this->getPaymentById($payment_id);
+			if (!$payment) {
+				return false;
+			}
+
+			$due_amount = ($payment->balance > 0) ? (float)$payment->balance : (float)$payment->amount;
+			$new_balance = $due_amount - (float)$amount_paid;
+
 			$screenshot_path = null;
 			if ($screenshot && $screenshot['error'] == UPLOAD_ERR_OK) {
 				$upload_dir = 'uploads/screenshots/';
@@ -717,8 +725,11 @@
 				move_uploaded_file($screenshot['tmp_name'], $screenshot_path);
 			}
 
-			$request = $this->dbh->prepare("UPDATE payments SET status = 'Pending', payment_method = ?, reference_number = ?, gcash_name = ?, gcash_number = ?, screenshot = ? WHERE id = ?");
-			return $request->execute([$payment_method, $reference_number, $gcash_name, $gcash_number, $screenshot_path, $payment_id]);
+			// To be consistent with rejectPayment and processManualPayment, we store the amount_paid in the gcash_name column.
+			$value_for_gcash_name_column = $amount_paid;
+
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Pending', balance = ?, payment_method = ?, reference_number = ?, gcash_name = ?, gcash_number = ?, screenshot = ? WHERE id = ?");
+			return $request->execute([$new_balance, $payment_method, $reference_number, $value_for_gcash_name_column, $gcash_number, $screenshot_path, $payment_id]);
 		}
 
 		public function processManualPayment($customer_id, $employer_id, $amount, $reference_number, $selected_bills, $screenshot = null)
@@ -791,8 +802,8 @@
 			if ($payment->screenshot && file_exists($payment->screenshot)) {
 				unlink($payment->screenshot);
 			}
-			$new_status = ($payment->balance == 0) ? 'Paid' : 'Unpaid';
-			$request = $this->dbh->prepare("UPDATE payments SET status = ?, p_date = NOW(), screenshot = NULL, gcash_name = NULL WHERE id = ?");
+			$new_status = ((float)$payment->balance <= 0) ? 'Paid' : 'Unpaid';
+			$request = $this->dbh->prepare("UPDATE payments SET status = ?, p_date = NOW(), screenshot = NULL, gcash_name = NULL, gcash_number = NULL WHERE id = ?");
 			return $request->execute([$new_status, $payment_id]);
 		}
 
@@ -806,9 +817,9 @@
 			if ($payment->screenshot && file_exists($payment->screenshot)) {
 				unlink($payment->screenshot);
 			}
-			$previous_balance = $payment->balance + (float)$payment->gcash_name;
+			$previous_balance = (float)$payment->balance + (float)$payment->gcash_name;
 
-			$request = $this->dbh->prepare("UPDATE payments SET status = 'Unpaid', balance = ?, screenshot = NULL, gcash_name = NULL WHERE id = ?");
+			$request = $this->dbh->prepare("UPDATE payments SET status = 'Unpaid', balance = ?, screenshot = NULL, gcash_name = NULL, gcash_number = NULL WHERE id = ?");
 			return $request->execute([$previous_balance, $payment_id]);
 		}
 		
@@ -912,8 +923,8 @@
 	// Bill generation of a Month
 		public function billGenerate($customer_id, $r_month, $amount){
 			try {
-				$request = $this->dbh->prepare("INSERT IGNORE INTO payments (customer_id, r_month, amount) VALUES(?,?,?)");
-				return $request->execute([$customer_id, $r_month, $amount]);
+				$request = $this->dbh->prepare("INSERT IGNORE INTO payments (customer_id, r_month, amount, balance) VALUES(?,?,?,?)");
+				return $request->execute([$customer_id, $r_month, $amount, $amount]);
 			} catch (Exception $e) {
 				return false;
 			}

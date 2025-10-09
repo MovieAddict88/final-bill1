@@ -25,8 +25,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $gcash_name = isset($_POST['gcash_name']) ? $_POST['gcash_name'] : null;
     $gcash_number = isset($_POST['gcash_number']) ? $_POST['gcash_number'] : null;
     $screenshot = isset($_FILES['screenshot']) ? $_FILES['screenshot'] : null;
+    $amount = $_POST['amount'];
 
-    if ($admins->processPayment($payment_id, $payment_method, $reference_number, $gcash_name, $gcash_number, $screenshot)) {
+    if ($admins->processPayment($payment_id, $payment_method, $reference_number, $gcash_name, $gcash_number, $screenshot, $amount)) {
         header('Location: customer_dashboard.php?payment=success');
         exit();
     } else {
@@ -48,8 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="alert alert-danger"><?php echo $error_message; ?></div>
                     <?php endif; ?>
                     <h4>Payment for <?php echo $payment->r_month; ?></h4>
-                    <p><strong>Amount:</strong> <?php echo $payment->amount; ?></p>
+                    <p><strong>Amount:</strong> <?php echo $payment->balance > 0 ? number_format($payment->balance, 2) : number_format($payment->amount, 2); ?></p>
                     <form action="" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="amount" value="<?php echo $payment->balance > 0 ? $payment->balance : $payment->amount; ?>">
                         <div class="form-group">
                             <label for="payment_method">Payment Method</label>
                             <select name="payment_method" id="payment_method" class="form-control" required>
